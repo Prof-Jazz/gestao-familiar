@@ -8,7 +8,29 @@ import { BASES, tomSaldo } from '../lib/calc.js';
 
 export const html = htm.bind(h);
 
+/** Logos de bancos e instituições de pagamento (ícone = "banco:<id>"). */
+export const LOGOS = [
+  { id: 'nubank', nome: 'Nubank', cor: '#820AD1', chaves: ['nubank', 'nu pagamentos', 'roxinho'] },
+  { id: 'inter', nome: 'Inter', cor: '#EA7100', chaves: ['inter'] },
+  { id: 'itau', nome: 'Itaú', cor: '#2E3192', chaves: ['itau', 'itaú', 'iti'] },
+  { id: 'banco-do-brasil', nome: 'Banco do Brasil', cor: '#34348A', chaves: ['banco do brasil', 'bb'] },
+  { id: 'caixa', nome: 'Caixa', cor: '#005CA9', chaves: ['caixa', 'cef'] },
+  { id: 'santander', nome: 'Santander', cor: '#EC0000', chaves: ['santander'] },
+  { id: 'picpay', nome: 'PicPay', cor: '#21C25E', chaves: ['picpay', 'pic pay'] },
+  { id: 'mercado-pago', nome: 'Mercado Pago', cor: '#009EE3', chaves: ['mercado pago', 'mercadopago', 'mercado livre'] },
+  { id: 'hotmart', nome: 'Hotmart', cor: '#F04E23', chaves: ['hotmart'] },
+];
+export const ehLogo = (n) => typeof n === 'string' && n.startsWith('banco:');
+export const logoDe = (n) => LOGOS.find((l) => 'banco:' + l.id === n);
+const urlLogo = (n) => `img/bancos/${n.slice(6)}.png`;
+/** Sugere o logo pelo nome/instituição digitados (ex.: "Conta Nubank" → Nubank). */
+export function sugerirLogo(...textos) {
+  const t = ' ' + textos.filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() + ' ';
+  return LOGOS.find((l) => l.chaves.some((c) => new RegExp('(^|[^a-z])' + c.normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '([^a-z]|$)').test(t))) || null;
+}
+
 export function Icone({ n, cls = '', titulo }) {
+  if (ehLogo(n)) return html`<img class=${'ic logo ' + cls} src=${urlLogo(n)} alt=${titulo || logoDe(n)?.nome || ''} loading="lazy" />`;
   return html`<svg class=${'ic ' + cls} viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
     aria-hidden=${titulo ? undefined : 'true'} role=${titulo ? 'img' : undefined} dangerouslySetInnerHTML=${{ __html: (titulo ? `<title>${titulo}</title>` : '') + (ICONES[n] || ICONES['ellipsis']) }} />`;
 }
@@ -17,6 +39,8 @@ export const LISTA_ICONES = Object.keys(ICONES);
 /** Ícone de categoria em quadrado colorido (cor da categoria). */
 export function CatIcone({ cat, p, cor, icone }) {
   const c = cor || cat?.cor || '#9CA3AF';
+  const ic = icone || cat?.icone;
+  if (ehLogo(ic)) return html`<span class=${'cb logo' + (p ? ' p' : '')}><${Icone} n=${ic} /></span>`;
   return html`<span class=${'cb' + (p ? ' p' : '')} style=${`background:${c}1F;color:${c}`}><${Icone} n=${icone || cat?.icone || 'ellipsis'} /></span>`;
 }
 
@@ -147,10 +171,15 @@ export function SeletorCor({ valor, onChange }) {
     onClick=${() => onChange(c)}></button>`)}
     <input type="color" value=${valor} onInput=${(e) => onChange(e.target.value.toUpperCase())} aria-label="Outra cor" style="width:40px;height:32px;border:0;background:none" /></div>`;
 }
-export function SeletorIcone({ valor, onChange, cor = '#5B4FE9' }) {
+export function SeletorIcone({ valor, onChange, cor = '#5B4FE9', logos, onLogo }) {
   const [busca, setBusca] = useState('');
   const lista = LISTA_ICONES.filter((n) => !busca || n.includes(busca.toLowerCase()));
-  return html`<div class="pilha" style="gap:8px"><input class="inp" placeholder="Filtrar ícones (em inglês: car, home…)" value=${busca} onInput=${(e) => setBusca(e.target.value)} />
+  return html`<div class="pilha" style="gap:8px">
+    ${logos && html`<div><div style="font-size:12.5px;font-weight:700;color:var(--txt3);margin-bottom:6px">Bancos e instituições de pagamento</div>
+      <div class="logos-grade">${LOGOS.map((l) => html`<button type="button" class=${'logo-op' + (valor === 'banco:' + l.id ? ' on' : '')} aria-pressed=${valor === 'banco:' + l.id}
+        title=${l.nome} onClick=${() => { onChange('banco:' + l.id); onLogo?.(l); }}><img src=${urlLogo('banco:' + l.id)} alt="" /><span>${l.nome}</span></button>`)}</div>
+      <div style="font-size:12.5px;font-weight:700;color:var(--txt3);margin:10px 0 0">Ou um ícone genérico</div></div>`}
+    <input class="inp" placeholder="Filtrar ícones (em inglês: car, home…)" value=${busca} onInput=${(e) => setBusca(e.target.value)} />
     <div class="chips" style="max-height:150px;overflow:auto">${lista.map((n) => html`<button type="button" class="chip" title=${n} aria-pressed=${valor === n}
       style=${`padding:7px;${valor === n ? `background:${cor};border-color:${cor};color:#fff` : ''}`} onClick=${() => onChange(n)}><${Icone} n=${n} /></button>`)}</div></div>`;
 }

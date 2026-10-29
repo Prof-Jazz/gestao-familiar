@@ -57,10 +57,10 @@ export function criarBackendDemo() {
       subs.split('|').filter(Boolean).forEach((s, j) => { const sc = ins('categorias', { tipo, nome: s, icone, cor, ordem: j + 1, arquivada: false, parent_id: c.id }); cat[nome].subs[s] = sc.id; });
     }
     const ini = primeiroDia(addMesYM(ym0, -5));
-    const cc = ins('contas', { nome: 'Conta corrente', tipo: 'corrente', instituicao: 'Banco Demo', saldo_inicial_centavos: 450000, data_referencia: ini, cor: '#2563EB', icone: 'landmark', ordem: 1, arquivada: false });
+    const cc = ins('contas', { nome: 'Conta corrente', tipo: 'corrente', instituicao: 'Nubank', saldo_inicial_centavos: 450000, data_referencia: ini, cor: '#820AD1', icone: 'banco:nubank', ordem: 1, arquivada: false });
     const cd = ins('contas', { nome: 'Carteira', tipo: 'dinheiro', saldo_inicial_centavos: 30000, data_referencia: ini, cor: '#16A34A', icone: 'wallet', ordem: 2, arquivada: false });
-    const cr = ins('contas', { nome: 'Reserva de emergência', tipo: 'reserva', saldo_inicial_centavos: 800000, data_referencia: ini, cor: '#0891B2', icone: 'piggy-bank', ordem: 3, arquivada: false });
-    const k = ins('cartoes', { nome: 'Cartão Família', titular_id: pL.id, limite_centavos: 800000, dia_fechamento: 25, dia_vencimento: 5, conta_pagamento_id: cc.id, cor: '#7C3AED', ordem: 1, arquivado: false });
+    const cr = ins('contas', { nome: 'Reserva de emergência', tipo: 'reserva', saldo_inicial_centavos: 800000, data_referencia: ini, cor: '#EA7100', icone: 'banco:inter', ordem: 3, arquivada: false });
+    const k = ins('cartoes', { nome: 'Cartão Família', titular_id: pL.id, limite_centavos: 800000, dia_fechamento: 25, dia_vencimento: 5, conta_pagamento_id: cc.id, cor: '#EC0000', icone: 'banco:santander', ordem: 1, arquivado: false });
     const C = (n, s) => ({ categoria_id: cat[n].id, subcategoria_id: s ? cat[n].subs[s] : null });
     const L = (o, u) => ins('lancamentos', { status: 'efetivado', forma_pagamento: 'pix', beneficiario_id: pFam.id, ...o, competencia: o.competencia || primeiroDia(o.data_ocorrencia.slice(0, 7)) }, u ?? (r() < 0.5 ? U1 : U2));
 

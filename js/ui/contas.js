@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { html, Icone, CatIcone, Tom, Vazio, Modal, Campo, Sel, CampoValor, SeletorCor, SeletorIcone, Barra, opcoesContas, opcoesPessoas } from './comp.js';
+import { html, Icone, CatIcone, Tom, Vazio, Modal, Campo, Sel, CampoValor, SeletorCor, SeletorIcone, Barra, opcoesContas, opcoesPessoas, sugerirLogo, ehLogo } from './comp.js';
 import { useStore, salvar, apagar, toast, confirmar, abrirForm, inserir, store } from '../data/store.js';
 import * as C from '../lib/calc.js';
 import { brl, hoje, dataBR, nomeMesCap, uuid } from '../lib/fmt.js';
@@ -69,7 +69,7 @@ function Cartao({ c, D, H, editar }) {
     <div class="grade g-cc" style="align-items:start">
       <div class="pilha">
         <div class="cc-visual" style=${`background:linear-gradient(135deg, ${c.cor}, ${c.cor}AA)`}>
-          <div style="display:flex;justify-content:space-between;align-items:center"><span class="nm">${c.nome}</span>
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">${ehLogo(c.icone) && html`<span class="cc-logo"><${Icone} n=${c.icone} /></span>`}<span class="nm" style="flex:1">${c.nome}</span>
             <button class="btn fantasma ico peq" style="color:#fff;position:relative;z-index:1" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
           <div><div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class="num">${brl(lim.disponivel)}</div>
             <div class="lim">de ${brl(c.limite_centavos)} · ${titular ? 'Titular: ' + titular + ' · ' : ''}fecha dia ${c.dia_fechamento}, vence dia ${c.dia_vencimento}</div></div>
@@ -144,7 +144,12 @@ function PagarFatura({ f, c, D, fechar }) {
 function FormConta({ c, D, fechar }) {
   const [x, setX] = useState({ nome: '', tipo: 'corrente', instituicao: '', saldo_inicial_centavos: 0, data_referencia: hoje(), cor: '#2563EB', icone: 'landmark', arquivada: false, ...c });
   const [erro, setErro] = useState(''); const [ocupado, setOcupado] = useState(false);
-  const set = (p) => setX({ ...x, ...p });
+  const [iconeManual, setIconeManual] = useState(!!c.id);
+  const set = (p) => setX((v) => {
+    const n = { ...v, ...p };
+    if (!iconeManual && ('nome' in p || 'instituicao' in p)) { const l = sugerirLogo(n.nome, n.instituicao); if (l) Object.assign(n, { icone: 'banco:' + l.id, cor: l.cor }); }
+    return n;
+  });
   const usada = c.id && D.lancamentos.some((l) => l.conta_id === c.id || l.conta_destino_id === c.id);
   async function ok() {
     if (!x.nome.trim()) return setErro('Informe o nome.');
@@ -167,15 +172,20 @@ function FormConta({ c, D, fechar }) {
         <${Campo} rot="Saldo inicial" obrig dica="Pode ser negativo (ex.: −50,00)."><${CampoValor} valor=${x.saldo_inicial_centavos} onChange=${(v) => set({ saldo_inicial_centavos: v })} /></${Campo}>
         <${Campo} rot="Data de referência" obrig dica="Saldo no início deste dia."><input class="inp" type="date" value=${x.data_referencia} onInput=${(e) => set({ data_referencia: e.target.value })} /></${Campo}></div>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
-      <${Campo} rot="Ícone"><${SeletorIcone} valor=${x.icone} cor=${x.cor} onChange=${(v) => set({ icone: v })} /></${Campo}>
+      <${Campo} rot="Ícone"><${SeletorIcone} logos valor=${x.icone} cor=${x.cor} onChange=${(v) => { setIconeManual(true); set({ icone: v }); }} onLogo=${(l) => set({ cor: l.cor })} /></${Campo}>
       ${erro && html`<div class="erro-msg">${erro}</div>`}
     </div></${Modal}>`;
 }
 
 function FormCartao({ c, D, fechar }) {
-  const [x, setX] = useState({ nome: '', titular_id: null, limite_centavos: 0, dia_fechamento: 25, dia_vencimento: 5, conta_pagamento_id: D.contas[0]?.id || null, cor: '#7C3AED', arquivado: false, ...c });
+  const [x, setX] = useState({ nome: '', titular_id: null, limite_centavos: 0, dia_fechamento: 25, dia_vencimento: 5, conta_pagamento_id: D.contas[0]?.id || null, cor: '#7C3AED', icone: 'credit-card', arquivado: false, ...c });
   const [erro, setErro] = useState(''); const [ocupado, setOcupado] = useState(false);
-  const set = (p) => setX({ ...x, ...p });
+  const [iconeManual, setIconeManual] = useState(!!c.id);
+  const set = (p) => setX((v) => {
+    const n = { ...v, ...p };
+    if (!iconeManual && 'nome' in p) { const l = sugerirLogo(n.nome); if (l) Object.assign(n, { icone: 'banco:' + l.id, cor: l.cor }); }
+    return n;
+  });
   const usado = c.id && D.lancamentos.some((l) => l.cartao_id === c.id);
   const dias = Array.from({ length: 31 }, (_, i) => ({ v: String(i + 1), r: String(i + 1) }));
   async function ok() {
@@ -202,6 +212,7 @@ function FormCartao({ c, D, fechar }) {
       <small style="color:var(--txt3)">Compras feitas no dia do fechamento ou depois entram na fatura seguinte.</small>
       <${Campo} rot="Conta usada para pagar a fatura"><${Sel} valor=${x.conta_pagamento_id} onChange=${(v) => set({ conta_pagamento_id: v })} vazio="—" opcoes=${opcoesContas(D)} /></${Campo}>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
+      <${Campo} rot="Ícone"><${SeletorIcone} logos valor=${x.icone || 'credit-card'} cor=${x.cor} onChange=${(v) => { setIconeManual(true); set({ icone: v }); }} onLogo=${(l) => set({ cor: l.cor })} /></${Campo}>
       ${erro && html`<div class="erro-msg">${erro}</div>`}
     </div></${Modal}>`;
 }

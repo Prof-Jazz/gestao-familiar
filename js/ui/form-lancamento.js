@@ -64,7 +64,7 @@ function Formulario({ cfg, D, perfil }) {
   const ehCartao = !!f.cartao_id && tipo !== 'pagamento_fatura';
   const tipoCat = tipo === 'receita' ? 'receita' : 'despesa';
   const catsMae = D.categorias.filter((c) => c.tipo === tipoCat && !c.parent_id && (!c.arquivada || c.id === f.categoria_id));
-  const subs = D.categorias.filter((c) => c.parent_id === f.categoria_id && (!c.arquivada || c.id === f.subcategoria_id));
+  const subs = f.categoria_id ? D.categorias.filter((c) => c.parent_id === f.categoria_id && (!c.arquivada || c.id === f.subcategoria_id)) : [];
   const cartao = ehCartao ? D.mapa.cartoes[f.cartao_id] : null;
 
   // fatura e competência acompanham a data da compra
@@ -77,7 +77,7 @@ function Formulario({ cfg, D, perfil }) {
 
   const origens = [
     ...D.contas.filter((c) => !c.arquivada || c.id === f.conta_id).map((c) => ({ k: 'c:' + c.id, nome: c.nome, icone: c.icone || 'landmark', cor: c.cor, conta_id: c.id, cartao_id: null })),
-    ...(tipo === 'despesa' || (tipo === 'reembolso') ? D.cartoes.filter((c) => !c.arquivado || c.id === f.cartao_id).map((c) => ({ k: 'k:' + c.id, nome: c.nome, icone: 'credit-card', cor: c.cor, conta_id: null, cartao_id: c.id })) : []),
+    ...(tipo === 'despesa' || (tipo === 'reembolso') ? D.cartoes.filter((c) => !c.arquivado || c.id === f.cartao_id).map((c) => ({ k: 'k:' + c.id, nome: c.nome, icone: c.icone || 'credit-card', cor: c.cor, conta_id: null, cartao_id: c.id })) : []),
   ];
   const origemAtual = f.cartao_id ? 'k:' + f.cartao_id : f.conta_id ? 'c:' + f.conta_id : '';
   const escolherOrigem = (o) => set({ conta_id: o.conta_id, cartao_id: o.cartao_id, forma_pagamento: o.cartao_id ? 'credito' : (f.forma_pagamento === 'credito' ? null : f.forma_pagamento), fatura: o.cartao_id ? faturaDaCompra(D.mapa.cartoes[o.cartao_id], f.data_ocorrencia) : null });

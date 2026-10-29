@@ -332,3 +332,14 @@ table.tab { width: 100%; border-collapse: collapse; font-size: 14px; }
 }
 .g-cc { grid-template-columns: minmax(220px, 300px) minmax(0, 1fr); }
 @media (max-width: 860px) { .g-cc { grid-template-columns: 1fr; } }
+/* ---------- logos de bancos ---------- */
+img.ic.logo { object-fit: contain; border-radius: 4px; }
+.cb.logo { background: #fff; border: 1px solid var(--borda); }
+.cb.logo img.ic { width: 74%; height: 74%; }
+.chip img.ic.logo { width: 1.35em; height: 1.35em; background: #fff; padding: 1px; border-radius: 5px; }
+.logos-grade { display: grid; grid-template-columns: repeat(auto-fill, minmax(86px, 1fr)); gap: 8px; }
+.logo-op { border: 1.5px solid var(--borda); background: #fff; border-radius: 14px; padding: 10px 4px 8px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--txt2); }
+.logo-op img { width: 38px; height: 38px; object-fit: contain; }
+.logo-op.on { border-color: var(--pri); box-shadow: 0 0 0 3px var(--pri-suave); color: var(--pri-esc); }
+.cc-logo { width: 38px; height: 38px; border-radius: 11px; background: #fff; display: grid; place-items: center; flex: none; position: relative; z-index: 1; }
+.cc-logo img.ic { width: 76%; height: 76%; }

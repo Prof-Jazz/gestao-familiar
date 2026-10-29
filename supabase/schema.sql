@@ -201,11 +201,15 @@ create table if not exists public.cartoes (
   dia_vencimento int not null check (dia_vencimento between 1 and 31),
   conta_pagamento_id uuid references public.contas(id),
   cor       text not null default '#7C3AED',
+  icone     text not null default 'credit-card',
   ordem     int not null default 0,
   arquivado boolean not null default false,
   criado_por uuid, criado_em timestamptz, alterado_por uuid, alterado_em timestamptz,
   versao int not null default 1
 );
+
+-- migração v1.1: ícone/logo do cartão (para bancos já criados)
+alter table public.cartoes add column if not exists icone text not null default 'credit-card';
 
 create table if not exists public.projetos (
   id        uuid primary key default gen_random_uuid(),

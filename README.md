@@ -76,7 +76,11 @@ Supabase → SQL Editor → cole todo o arquivo `supabase/schema.sql` → *Run*.
 - E-mail de recuperação para a Laucielly: depende do item 3.
 - O plano gratuito do Supabase **pausa o projeto após 7 dias sem uso**; basta reativar no painel. Backups diários automáticos existem só no plano Pro — use *Configurações → Backup* periodicamente.
 
-## 8. Estrutura do código
+## 8. Logos de bancos
+
+Ao cadastrar ou editar uma **conta** ou um **cartão**, o campo *Ícone* oferece os logos de Nubank, Inter, Itaú, Banco do Brasil, Caixa, Santander, PicPay, Mercado Pago e Hotmart (arquivos em `img/bancos/`). Ao digitar o nome (ex.: “Conta Itaú”), o logo e a cor são sugeridos automaticamente — dá para trocar à vontade. Para incluir outro banco: salve um PNG quadrado em `img/bancos/<id>.png` e acrescente uma linha na lista `LOGOS` em `js/ui/comp.js`.
+
+## 9. Estrutura do código
 
 ```
 supabase/schema.sql        banco: tabelas, RLS, triggers de autoria/histórico, categorias iniciais
