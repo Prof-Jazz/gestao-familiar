@@ -1,0 +1,3 @@
+{ "name": "GESTÃO FAMILIAR DE FINANÇAS E PROJETOS", "short_name": "Gestão Familiar", "description": "As finanças e os planos do nosso lar, em um só lugar",
+  "start_url": "./", "display": "standalone", "background_color": "#F4F5FB", "theme_color": "#5B4FE9", "lang": "pt-BR",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }] }
