@@ -8,25 +8,43 @@ import { BASES, tomSaldo } from '../lib/calc.js';
 
 export const html = htm.bind(h);
 
-/** Logos de bancos e instituições de pagamento (ícone = "banco:<id>"). */
+/** Logos: bancos/instituições (ícone "banco:<id>", img/bancos) e marcas de serviços (ícone "marca:<id>", img/marcas). */
 export const LOGOS = [
   { id: 'nubank', nome: 'Nubank', cor: '#820AD1', chaves: ['nubank', 'nu pagamentos', 'roxinho'] },
   { id: 'inter', nome: 'Inter', cor: '#EA7100', chaves: ['inter'] },
-  { id: 'itau', nome: 'Itaú', cor: '#2E3192', chaves: ['itau', 'itaú', 'iti'] },
+  { id: 'itau', nome: 'Itaú', cor: '#2E3192', chaves: ['itau', 'iti'] },
   { id: 'banco-do-brasil', nome: 'Banco do Brasil', cor: '#34348A', chaves: ['banco do brasil', 'bb'] },
   { id: 'caixa', nome: 'Caixa', cor: '#005CA9', chaves: ['caixa', 'cef'] },
   { id: 'santander', nome: 'Santander', cor: '#EC0000', chaves: ['santander'] },
   { id: 'picpay', nome: 'PicPay', cor: '#21C25E', chaves: ['picpay', 'pic pay'] },
   { id: 'mercado-pago', nome: 'Mercado Pago', cor: '#009EE3', chaves: ['mercado pago', 'mercadopago', 'mercado livre'] },
   { id: 'hotmart', nome: 'Hotmart', cor: '#F04E23', chaves: ['hotmart'] },
-];
-export const ehLogo = (n) => typeof n === 'string' && n.startsWith('banco:');
-export const logoDe = (n) => LOGOS.find((l) => 'banco:' + l.id === n);
-const urlLogo = (n) => `img/bancos/${n.slice(6)}.png`;
+].map((l) => ({ ...l, grupo: 'banco' })).concat([
+  { id: 'ifood', nome: 'iFood', cor: '#EA1D2C', chaves: ['ifood'] },
+  { id: 'uber', nome: 'Uber', cor: '#000000', chaves: ['uber'] },
+  { id: 'sem-parar', nome: 'Sem Parar', cor: '#FF0A54', chaves: ['sem parar', 'pedagio'] },
+  { id: 'cemig', nome: 'Cemig', cor: '#008E47', chaves: ['cemig'] },
+  { id: 'algar', nome: 'Algar', cor: '#1C8BD0', chaves: ['algar'] },
+  { id: 'netflix', nome: 'Netflix', cor: '#E50914', chaves: ['netflix'] },
+  { id: 'spotify', nome: 'Spotify', cor: '#1ED760', chaves: ['spotify'] },
+  { id: 'prime-video', nome: 'Prime Video', cor: '#1FA8E0', chaves: ['prime video', 'amazon prime', 'prime'] },
+  { id: 'disney-plus', nome: 'Disney+', cor: '#0B4A5E', chaves: ['disney'] },
+  { id: 'hbo-max', nome: 'HBO Max', cor: '#7B2FE0', chaves: ['hbo', 'max'] },
+  { id: 'youtube', nome: 'YouTube', cor: '#FF0000', chaves: ['youtube'] },
+  { id: 'chatgpt', nome: 'ChatGPT', cor: '#10A37F', chaves: ['chatgpt', 'openai'] },
+  { id: 'claude', nome: 'Claude', cor: '#D97757', chaves: ['claude', 'anthropic'] },
+  { id: 'adobe', nome: 'Adobe', cor: '#ED1C24', chaves: ['adobe'] },
+  { id: 'foxit', nome: 'Foxit', cor: '#FF5F00', chaves: ['foxit'] },
+].map((l) => ({ ...l, grupo: 'marca' })));
+export const chaveLogo = (l) => (l.grupo === 'marca' ? 'marca:' : 'banco:') + l.id;
+export const ehLogo = (n) => typeof n === 'string' && /^(banco|marca):/.test(n);
+export const logoDe = (n) => LOGOS.find((l) => chaveLogo(l) === n);
+const urlLogo = (n) => (n.startsWith('marca:') ? `img/marcas/${n.slice(6)}.png` : `img/bancos/${n.slice(6)}.png`);
 /** Sugere o logo pelo nome/instituição digitados (ex.: "Conta Nubank" → Nubank). */
-export function sugerirLogo(...textos) {
+export function sugerirLogo(...textos) { return sugerirLogoDe(null, ...textos); }
+export function sugerirLogoDe(grupo, ...textos) {
   const t = ' ' + textos.filter(Boolean).join(' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() + ' ';
-  return LOGOS.find((l) => l.chaves.some((c) => new RegExp('(^|[^a-z])' + c.normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '([^a-z]|$)').test(t))) || null;
+  return LOGOS.find((l) => (!grupo || l.grupo === grupo) && l.chaves.some((c) => new RegExp('(^|[^a-z])' + c.normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '([^a-z]|$)').test(t))) || null;
 }
 
 export function Icone({ n, cls = '', titulo }) {
@@ -174,10 +192,12 @@ export function SeletorCor({ valor, onChange }) {
 export function SeletorIcone({ valor, onChange, cor = '#5B4FE9', logos, onLogo }) {
   const [busca, setBusca] = useState('');
   const lista = LISTA_ICONES.filter((n) => !busca || n.includes(busca.toLowerCase()));
+  const grupos = logos === 'marcas' ? [['marca', 'Serviços e assinaturas'], ['banco', 'Bancos e instituições de pagamento']]
+    : [['banco', 'Bancos e instituições de pagamento'], ['marca', 'Serviços e assinaturas']];
   return html`<div class="pilha" style="gap:8px">
-    ${logos && html`<div><div style="font-size:12.5px;font-weight:700;color:var(--txt3);margin-bottom:6px">Bancos e instituições de pagamento</div>
-      <div class="logos-grade">${LOGOS.map((l) => html`<button type="button" class=${'logo-op' + (valor === 'banco:' + l.id ? ' on' : '')} aria-pressed=${valor === 'banco:' + l.id}
-        title=${l.nome} onClick=${() => { onChange('banco:' + l.id); onLogo?.(l); }}><img src=${urlLogo('banco:' + l.id)} alt="" /><span>${l.nome}</span></button>`)}</div>
+    ${logos && html`<div>${grupos.map(([g, rot]) => html`<div style="font-size:12.5px;font-weight:700;color:var(--txt3);margin:4px 0 6px">${rot}</div>
+      <div class="logos-grade" style="margin-bottom:6px">${LOGOS.filter((l) => l.grupo === g).map((l) => html`<button type="button" class=${'logo-op' + (valor === chaveLogo(l) ? ' on' : '')} aria-pressed=${valor === chaveLogo(l)}
+        title=${l.nome} onClick=${() => { onChange(chaveLogo(l)); onLogo?.(l); }}><img src=${urlLogo(chaveLogo(l))} alt="" /><span>${l.nome}</span></button>`)}</div>`)}
       <div style="font-size:12.5px;font-weight:700;color:var(--txt3);margin:10px 0 0">Ou um ícone genérico</div></div>`}
     <input class="inp" placeholder="Filtrar ícones (em inglês: car, home…)" value=${busca} onInput=${(e) => setBusca(e.target.value)} />
     <div class="chips" style="max-height:150px;overflow:auto">${lista.map((n) => html`<button type="button" class="chip" title=${n} aria-pressed=${valor === n}

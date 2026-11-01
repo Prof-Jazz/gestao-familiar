@@ -64,7 +64,6 @@ export function Relatorios() {
   <div class="card nao-imprimir" style="margin-bottom:16px"><div class="filtros">
     <${Campo} rot="Conta"><${Sel} valor=${f.conta_id} onChange=${(v) => set({ conta_id: v })} vazio="Todas" opcoes=${opcoesContas(D, { incluirArquivadas: true })} /></${Campo}>
     <${Campo} rot="Cartão"><${Sel} valor=${f.cartao_id} onChange=${(v) => set({ cartao_id: v })} vazio="Todos" opcoes=${D.cartoes.map((c) => ({ v: c.id, r: c.nome }))} /></${Campo}>
-    <${Campo} rot="Beneficiário"><${Sel} valor=${f.beneficiario_id} onChange=${(v) => set({ beneficiario_id: v })} vazio="Todos" opcoes=${opcoesPessoas(D)} /></${Campo}>
     <${Campo} rot="Quem pagou"><${Sel} valor=${f.pagador_id} onChange=${(v) => set({ pagador_id: v })} vazio="Todos" opcoes=${opcoesPessoas(D)} /></${Campo}>
     <${Campo} rot="Projeto"><${Sel} valor=${f.projeto_id} onChange=${(v) => set({ projeto_id: v })} vazio="Todos" opcoes=${D.projetos.map((p) => ({ v: p.id, r: p.nome }))} /></${Campo}>
     <span style="flex:1"></span>

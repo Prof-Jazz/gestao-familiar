@@ -68,7 +68,7 @@ function FormCategoria({ c, D, usada, fechar }) {
     <div class="pilha">
       <div style="display:flex;gap:12px;align-items:center"><${CatIcone} cor=${x.cor} icone=${x.icone} /><input class="inp" value=${x.nome} onInput=${(e) => set({ nome: e.target.value })} placeholder="Nome" aria-label="Nome da categoria" /></div>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
-      <${Campo} rot="Ícone"><${SeletorIcone} valor=${x.icone} cor=${x.cor} onChange=${(v) => set({ icone: v })} /></${Campo}>
+      <${Campo} rot="Ícone"><${SeletorIcone} logos="marcas" valor=${x.icone} cor=${x.cor} onChange=${(v) => set({ icone: v })} /></${Campo}>
       ${erro && html`<div class="erro-msg">${erro}</div>`}
     </div></${Modal}>`;
 }
@@ -79,7 +79,7 @@ function Pessoas() {
   const [edit, setEdit] = useState(null);
   const TIPOS = { familia: 'Família (todos)', membro: 'Membro com acesso', filho: 'Filho(a)', outro: 'Outro beneficiário' };
   return html`<div class="card"><h3><${Icone} n="users" /> Pessoas e beneficiários <span class="acao"><button class="btn peq" onClick=${() => setEdit({ tipo: 'filho' })}><${Icone} n="plus" /> Adicionar</button></span></h3>
-    <div class="card-sub">Usados em “quem pagou/recebeu” e “a quem a despesa se refere”. Quem <b>registrou</b> o lançamento vem sempre do login.</div>
+    <div class="card-sub">Usados em “quem pagou/recebeu”. Quem <b>registrou</b> o lançamento vem sempre do login.</div>
     <div class="lista">${D.pessoas.map((p) => html`<div class="item" style=${p.ativo === false ? 'opacity:.5' : ''}><${Avatar} nome=${p.nome} cor=${p.cor} /><div class="meio"><div class="t1">${p.nome}</div><div class="t2">${TIPOS[p.tipo]}${p.perfil_id ? ' · vinculado ao login' : ''}${p.ativo === false ? ' · inativo' : ''}</div></div>
       <button class="btn fantasma ico peq" aria-label="Editar" onClick=${() => setEdit(p)}><${Icone} n="pencil" /></button></div>`)}</div>
     ${edit && html`<${FormPessoa} p=${edit} D=${D} tipos=${TIPOS} fechar=${() => setEdit(null)} />`}</div>`;

@@ -579,23 +579,23 @@ declare
 begin
   if exists (select 1 from public.categorias) then return; end if;
   for cat in select * from (values
-    ('despesa','Moradia','house','#2563EB','Aluguel|Financiamento|Condomínio|Água|Energia|Gás|Internet|Manutenção|Móveis'),
-    ('despesa','Supermercado','shopping-cart','#16A34A','Compras do mês|Feira|Açougue|Padaria|Produtos de limpeza'),
-    ('despesa','Alimentação fora e delivery','utensils','#F97316','iFood|Restaurantes|Lanches|Cafés'),
-    ('despesa','Veículos e transporte','car','#0F766E','Combustível|Seguro|IPVA|Licenciamento|Manutenção|Estacionamento|Aplicativos'),
-    ('despesa','Educação','book-open','#7C3AED','Colégio|Curso de inglês|Material escolar|Livros|Outros cursos'),
-    ('despesa','Saúde','heart-pulse','#EC4899','Plano de saúde|Consultas|Exames|Medicamentos|Dentista|Terapia'),
-    ('despesa','Esportes e atividade física','dumbbell','#65A30D','Academia|Escolinhas esportivas|Mensalidades|Equipamentos'),
-    ('despesa','Vestuário','shirt','#C026D3','Roupas|Calçados|Acessórios'),
-    ('despesa','Lazer e passeios','ticket','#EAB308','Cinema|Eventos|Passeios|Atividades em família'),
-    ('despesa','Serviços domésticos','brush-cleaning','#14B8A6','Diarista|Lavanderia|Jardinagem|Outros serviços'),
-    ('despesa','Cuidados pessoais','scissors','#A78BFA','Cabeleireiro|Barbearia|Cosméticos|Higiene pessoal'),
-    ('despesa','Assinaturas e tecnologia','tablet-smartphone','#4F46E5','Streaming|Aplicativos|Softwares|Armazenamento digital'),
-    ('despesa','Viagens','plane','#0EA5E9','Passagens|Hospedagem|Alimentação em viagem|Passeios em viagem'),
-    ('despesa','Presentes e comemorações','gift','#FB7185','Aniversários|Presentes|Festas'),
-    ('despesa','Contribuições e doações','hand-heart','#CA8A04','Dízimos|Ofertas|Doações|Ações solidárias'),
-    ('despesa','Pets','paw-print','#92400E','Alimentação|Veterinário|Cuidados'),
-    ('despesa','Tributos e serviços financeiros','file-text','#64748B','Impostos|Tarifas|Juros|Encargos de cartão'),
+    ('despesa','Moradia','house','#2563EB','Aluguel=key|Financiamento=landmark|Condomínio=building-2|Água=droplet|Energia=marca:cemig|Gás=flame|Internet=marca:algar|Manutenção=hammer|Móveis=sofa'),
+    ('despesa','Supermercado','shopping-cart','#16A34A','Compras do mês=shopping-basket|Feira=apple|Açougue=beef|Padaria=croissant|Produtos de limpeza=spray-can'),
+    ('despesa','Alimentação fora e delivery','utensils','#F97316','iFood=marca:ifood|Restaurantes=chef-hat|Lanches=sandwich|Cafés=coffee'),
+    ('despesa','Veículos e transporte','car','#0F766E','Combustível=fuel|Seguro=shield-check|IPVA=receipt|Licenciamento=badge-check|Manutenção=wrench|Estacionamento=square-parking|Aplicativos=car-taxi-front|Uber=marca:uber|Sem Parar=marca:sem-parar'),
+    ('despesa','Educação','book-open','#7C3AED','Colégio=school|Curso de inglês=languages|Material escolar=pencil|Livros=book|Outros cursos=graduation-cap'),
+    ('despesa','Saúde','heart-pulse','#EC4899','Plano de saúde=shield-plus|Consultas=stethoscope|Exames=microscope|Medicamentos=pill|Dentista=smile|Terapia=brain'),
+    ('despesa','Esportes e atividade física','dumbbell','#65A30D','Academia=dumbbell|Escolinhas esportivas=trophy|Mensalidades=calendar-check|Equipamentos=bike'),
+    ('despesa','Vestuário','shirt','#C026D3','Roupas=shirt|Calçados=footprints|Acessórios=watch'),
+    ('despesa','Lazer e passeios','ticket','#EAB308','Cinema=clapperboard|Eventos=party-popper|Passeios=trees|Atividades em família=users'),
+    ('despesa','Serviços domésticos','brush-cleaning','#14B8A6','Diarista=sparkles|Lavanderia=washing-machine|Jardinagem=flower-2|Outros serviços=wrench'),
+    ('despesa','Cuidados pessoais','scissors','#A78BFA','Cabeleireiro=scissors|Barbearia=user-round|Cosméticos=gem|Higiene pessoal=bath'),
+    ('despesa','Assinaturas e tecnologia','tablet-smartphone','#4F46E5','Streaming=tv|Aplicativos=smartphone|Softwares=laptop|Armazenamento digital=cloud|Netflix=marca:netflix|Spotify=marca:spotify|Prime Video=marca:prime-video|Disney+=marca:disney-plus|HBO Max=marca:hbo-max|YouTube Premium=marca:youtube|ChatGPT=marca:chatgpt|Claude=marca:claude|Adobe=marca:adobe|Foxit=marca:foxit'),
+    ('despesa','Viagens','plane','#0EA5E9','Passagens=plane-takeoff|Hospedagem=hotel|Alimentação em viagem=utensils|Passeios em viagem=map'),
+    ('despesa','Presentes e comemorações','gift','#FB7185','Aniversários=cake|Presentes=gift|Festas=party-popper'),
+    ('despesa','Contribuições e doações','hand-heart','#CA8A04','Dízimos=church|Ofertas=hand-coins|Doações=heart-handshake|Ações solidárias=hand-heart'),
+    ('despesa','Pets','paw-print','#92400E','Alimentação=bone|Veterinário=stethoscope|Cuidados=paw-print'),
+    ('despesa','Tributos e serviços financeiros','file-text','#64748B','Impostos=landmark|Tarifas=receipt|Juros=percent|Encargos de cartão=credit-card'),
     ('despesa','Outros','ellipsis','#9CA3AF',''),
     ('receita','Salários','briefcase','#059669',''),
     ('receita','Aulas particulares','presentation','#0891B2',''),
@@ -612,7 +612,8 @@ begin
     if cat.subs <> '' then
       foreach sub in array string_to_array(cat.subs, '|') loop
         j := j + 1;
-        insert into public.categorias (tipo, parent_id, nome, icone, cor, ordem) values (cat.tipo, pid, sub, cat.icone, cat.cor, j);
+        insert into public.categorias (tipo, parent_id, nome, icone, cor, ordem)
+          values (cat.tipo, pid, split_part(sub, '=', 1), coalesce(nullif(split_part(sub, '=', 2), ''), cat.icone), cat.cor, j);
       end loop;
     end if;
   end loop;

@@ -16,6 +16,7 @@ Plataforma web de uso exclusivo de **Jesrrael** e **Laucielly**: receitas, despe
 | Login | E-mail e senha individuais (Supabase Auth). Recuperação de senha por e-mail. |
 | Quem pode entrar | Apenas os e-mails da tabela `membros_autorizados` (jesrrael.santos@gmail.com e lau.crisspdr@gmail.com). Cadastro público **desativado**. Qualquer outra conta é recusada pelo banco. |
 | Proteção dos dados | Row Level Security em todas as tabelas: sem login de membro, a API responde 401. Esconder botões não é usado como proteção. |
+| Quem pagou | Cada lançamento registra quem pagou/recebeu (o campo “para quem” foi retirado a pedido; o favorecido já identifica o destino). |
 | Autoria | `criado_por`, `criado_em`, `alterado_por`, `alterado_em` são gravados **pelo servidor** (trigger) a partir da sessão. O que o navegador enviar nesses campos é ignorado. |
 | Histórico | Toda inclusão, alteração, exclusão e restauração fica na tabela `historico` (não editável pela API). |
 | Edição simultânea | Cada registro tem `versao`. Se a outra pessoa salvou antes, a gravação é recusada com aviso — nada é sobrescrito em silêncio. |
@@ -76,9 +77,13 @@ Supabase → SQL Editor → cole todo o arquivo `supabase/schema.sql` → *Run*.
 - E-mail de recuperação para a Laucielly: depende do item 3.
 - O plano gratuito do Supabase **pausa o projeto após 7 dias sem uso**; basta reativar no painel. Backups diários automáticos existem só no plano Pro — use *Configurações → Backup* periodicamente.
 
-## 8. Logos de bancos
+## 8. Logos de bancos e serviços
 
-Ao cadastrar ou editar uma **conta** ou um **cartão**, o campo *Ícone* oferece os logos de Nubank, Inter, Itaú, Banco do Brasil, Caixa, Santander, PicPay, Mercado Pago e Hotmart (arquivos em `img/bancos/`). Ao digitar o nome (ex.: “Conta Itaú”), o logo e a cor são sugeridos automaticamente — dá para trocar à vontade. Para incluir outro banco: salve um PNG quadrado em `img/bancos/<id>.png` e acrescente uma linha na lista `LOGOS` em `js/ui/comp.js`.
+Ao cadastrar ou editar uma **conta** ou um **cartão**, o campo *Ícone* oferece os logos de Nubank, Inter, Itaú, Banco do Brasil, Caixa, Santander, PicPay, Mercado Pago e Hotmart (arquivos em `img/bancos/`). Ao digitar o nome (ex.: “Conta Itaú”), o logo e a cor são sugeridos automaticamente — dá para trocar à vontade. 
+
+As **subcategorias** têm ícones próprios, e várias usam logos de serviços (`img/marcas/`): Cemig (Energia), Algar (Internet), iFood, Uber, Sem Parar, Netflix, Spotify, Prime Video, Disney+, HBO Max, YouTube Premium, ChatGPT, Claude, Adobe e Foxit. Em *Configurações → Categorias*, qualquer categoria ou subcategoria pode usar um desses logos. A migração que aplicou isso no banco existente está em `supabase/migracao-2026-10-31-subcategorias.sql`.
+
+Para incluir outro logo: salve um PNG quadrado em `img/bancos/<id>.png` e acrescente uma linha na lista `LOGOS` em `js/ui/comp.js`.
 
 ## 9. Estrutura do código
 

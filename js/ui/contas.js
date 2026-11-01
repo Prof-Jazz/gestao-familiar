@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'preact/hooks';
-import { html, Icone, CatIcone, Tom, Vazio, Modal, Campo, Sel, CampoValor, SeletorCor, SeletorIcone, Barra, opcoesContas, opcoesPessoas, sugerirLogo, ehLogo } from './comp.js';
+import { html, Icone, CatIcone, Tom, Vazio, Modal, Campo, Sel, CampoValor, SeletorCor, SeletorIcone, Barra, opcoesContas, opcoesPessoas, sugerirLogoDe, chaveLogo, ehLogo } from './comp.js';
 import { useStore, salvar, apagar, toast, confirmar, abrirForm, inserir, store } from '../data/store.js';
 import * as C from '../lib/calc.js';
 import { brl, hoje, dataBR, nomeMesCap, uuid } from '../lib/fmt.js';
@@ -147,7 +147,7 @@ function FormConta({ c, D, fechar }) {
   const [iconeManual, setIconeManual] = useState(!!c.id);
   const set = (p) => setX((v) => {
     const n = { ...v, ...p };
-    if (!iconeManual && ('nome' in p || 'instituicao' in p)) { const l = sugerirLogo(n.nome, n.instituicao); if (l) Object.assign(n, { icone: 'banco:' + l.id, cor: l.cor }); }
+    if (!iconeManual && ('nome' in p || 'instituicao' in p)) { const l = sugerirLogoDe('banco', n.nome, n.instituicao); if (l) Object.assign(n, { icone: chaveLogo(l), cor: l.cor }); }
     return n;
   });
   const usada = c.id && D.lancamentos.some((l) => l.conta_id === c.id || l.conta_destino_id === c.id);
@@ -183,7 +183,7 @@ function FormCartao({ c, D, fechar }) {
   const [iconeManual, setIconeManual] = useState(!!c.id);
   const set = (p) => setX((v) => {
     const n = { ...v, ...p };
-    if (!iconeManual && 'nome' in p) { const l = sugerirLogo(n.nome); if (l) Object.assign(n, { icone: 'banco:' + l.id, cor: l.cor }); }
+    if (!iconeManual && 'nome' in p) { const l = sugerirLogoDe('banco', n.nome); if (l) Object.assign(n, { icone: chaveLogo(l), cor: l.cor }); }
     return n;
   });
   const usado = c.id && D.lancamentos.some((l) => l.cartao_id === c.id);

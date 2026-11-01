@@ -96,7 +96,6 @@ export function Analises() {
       <${Campo} rot="Cartão"><${Sel} valor=${f.cartao_id} onChange=${(v) => set({ cartao_id: v })} vazio="Todos" opcoes=${D.cartoes.map((c) => ({ v: c.id, r: c.nome }))} /></${Campo}>
       <${Campo} rot="Lançado por"><${Sel} valor=${f.criado_por} onChange=${(v) => set({ criado_por: v })} vazio="Qualquer pessoa" opcoes=${D.perfis.map((p) => ({ v: p.id, r: p.nome }))} /></${Campo}>
       <${Campo} rot="Quem pagou/recebeu"><${Sel} valor=${f.pagador_id} onChange=${(v) => set({ pagador_id: v })} vazio="Qualquer pessoa" opcoes=${opcoesPessoas(D)} /></${Campo}>
-      <${Campo} rot="Beneficiário"><${Sel} valor=${f.beneficiario_id} onChange=${(v) => set({ beneficiario_id: v })} vazio="Todos" opcoes=${opcoesPessoas(D)} /></${Campo}>
       <${Campo} rot="Projeto"><${Sel} valor=${f.projeto_id} onChange=${(v) => set({ projeto_id: v })} vazio="Todos" opcoes=${D.projetos.map((p) => ({ v: p.id, r: p.nome }))} /></${Campo}>
       <button class="btn fantasma" onClick=${() => setF({})}><${Icone} n="x" /> Limpar</button>
     </div>`}

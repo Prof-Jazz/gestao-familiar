@@ -14,7 +14,7 @@ export function linhasExport(D, lancs) {
     'Cartão': nm(D.mapa.cartoes, l.cartao_id), 'Fatura': l.fatura ? l.fatura.slice(5, 7) + '/' + l.fatura.slice(0, 4) : '',
     'Competência': l.competencia ? l.competencia.slice(5, 7) + '/' + l.competencia.slice(0, 4) : '', 'Vencimento': dataBR(l.vencimento),
     'Data efetiva': dataBR(l.data_efetiva), 'Forma de pagamento': l.forma_pagamento || '', 'Quem pagou/recebeu': nm(D.mapa.pessoas, l.pagador_id),
-    'Beneficiário': nm(D.mapa.pessoas, l.beneficiario_id), 'Estabelecimento/favorecido': l.favorecido || '', 'Projeto': nm(D.mapa.projetos, l.projeto_id),
+'Estabelecimento/favorecido': l.favorecido || '', 'Projeto': nm(D.mapa.projetos, l.projeto_id),
     'Etiquetas': (l.etiquetas || []).join(', '), 'Observações': l.observacoes || '', 'Parcela': l.parcelas_total ? `${l.parcela_num}/${l.parcelas_total}` : '',
     'Lançado por': nm(D.mapa.perfis, l.criado_por), 'Lançado em': dataHoraBR(l.criado_em),
     'Alterado por': nm(D.mapa.perfis, l.alterado_por), 'Alterado em': dataHoraBR(l.alterado_em), 'ID': l.id,

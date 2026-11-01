@@ -26,7 +26,7 @@ function padrao(D, perfil, tipo, extra = {}) {
     tipo, descricao: '', valor_centavos: null, categoria_id: null, subcategoria_id: null,
     data_ocorrencia: h, competencia: primeiroDia(h.slice(0, 7)), vencimento: null, data_efetiva: h,
     conta_id, conta_destino_id: null, cartao_id, fatura: null, forma_pagamento: null,
-    status: 'efetivado', pagador_id: pessoaEu?.id || null, beneficiario_id: tipo === 'despesa' ? familia?.id || null : null,
+    status: 'efetivado', pagador_id: pessoaEu?.id || null, beneficiario_id: null,
     favorecido: '', projeto_id: null, observacoes: '', etiquetas: [], anexos: [], ...extra,
   };
 }
@@ -231,7 +231,7 @@ function Formulario({ cfg, D, perfil }) {
             aria-pressed=${f.categoria_id === c.id} onClick=${() => set({ categoria_id: c.id, subcategoria_id: null })}><${CatIcone} cat=${c} />${c.nome}</button>`)}</div>
         </div>
         ${subs.length > 0 && html`<div class="campo"><span>Subcategoria</span><div class="chips">${subs.map((s) => html`<button type="button" class=${'chip' + (f.subcategoria_id === s.id ? ' on' : '')}
-          onClick=${() => set({ subcategoria_id: f.subcategoria_id === s.id ? null : s.id })}>${s.nome}</button>`)}</div></div>`}`}
+          onClick=${() => set({ subcategoria_id: f.subcategoria_id === s.id ? null : s.id })}><${Icone} n=${s.icone} />${s.nome}</button>`)}</div></div>`}`}
 
       ${tipo !== 'transferencia' && tipo !== 'pagamento_fatura' && html`<div class="campo"><span>${tipo === 'receita' ? 'Recebido em' : tipo === 'reembolso' ? 'Creditado em' : 'Pago com'}</span>
         ${origens.length ? html`<div class="chips">${origens.map((o) => html`<button type="button" class=${'chip' + (origemAtual === o.k ? ' on' : '')} onClick=${() => escolherOrigem(o)}
@@ -263,11 +263,10 @@ function Formulario({ cfg, D, perfil }) {
       ${f.status === 'previsto' && !ehCartao && html`<${Campo} rot="Vencimento" obrig><input class="inp" type="date" value=${f.vencimento || ''} onInput=${(e) => set({ vencimento: e.target.value })} /></${Campo}>`}
 
       <details class="mais-detalhes" open=${editando && (f.observacoes || f.projeto_id || (f.etiquetas || []).length > 0)}>
-        <summary><${Icone} n="chevron-down" /> Mais detalhes (pessoas, competência, parcelas, recorrência, anexos…)</summary>
+        <summary><${Icone} n="chevron-down" /> Mais detalhes (quem pagou, competência, parcelas, recorrência, anexos…)</summary>
         <div class="pilha" style="margin-top:14px">
           ${tipo !== 'transferencia' && html`<div class="linha">
             <${Campo} rot=${tipo === 'receita' ? 'Quem recebeu' : 'Quem pagou'}><${Sel} valor=${f.pagador_id} onChange=${(v) => set({ pagador_id: v })} vazio="—" opcoes=${opcoesPessoas(D)} /></${Campo}>
-            ${tipo !== 'receita' && html`<${Campo} rot="A quem se refere (beneficiário)"><${Sel} valor=${f.beneficiario_id} onChange=${(v) => set({ beneficiario_id: v })} vazio="—" opcoes=${opcoesPessoas(D)} /></${Campo}>`}
           </div>`}
           <div class="linha">
             ${tipo !== 'transferencia' && html`<${Campo} rot=${tipo === 'receita' ? 'Fonte pagadora' : 'Estabelecimento / favorecido'}><input class="inp" value=${f.favorecido || ''} onInput=${(e) => set({ favorecido: e.target.value })} /></${Campo}>`}

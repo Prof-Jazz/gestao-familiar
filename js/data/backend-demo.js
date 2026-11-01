@@ -54,7 +54,7 @@ export function criarBackendDemo() {
     for (const [tipo, nome, icone, cor, subs] of CATEGORIAS_INICIAIS) {
       const c = ins('categorias', { tipo, nome, icone, cor, ordem: ++ordem, arquivada: false, parent_id: null });
       cat[nome] = { id: c.id, subs: {} };
-      subs.split('|').filter(Boolean).forEach((s, j) => { const sc = ins('categorias', { tipo, nome: s, icone, cor, ordem: j + 1, arquivada: false, parent_id: c.id }); cat[nome].subs[s] = sc.id; });
+      subs.split('|').filter(Boolean).forEach((par, j) => { const [s, ic] = par.split('='); const sc = ins('categorias', { tipo, nome: s, icone: ic || icone, cor, ordem: j + 1, arquivada: false, parent_id: c.id }); cat[nome].subs[s] = sc.id; });
     }
     const ini = primeiroDia(addMesYM(ym0, -5));
     const cc = ins('contas', { nome: 'Conta corrente', tipo: 'corrente', instituicao: 'Nubank', saldo_inicial_centavos: 450000, data_referencia: ini, cor: '#820AD1', icone: 'banco:nubank', ordem: 1, arquivada: false });
@@ -85,7 +85,7 @@ export function criarBackendDemo() {
       L({ tipo: 'despesa', descricao: 'Diarista', valor_centavos: 60000, ...C('Serviços domésticos', 'Diarista'), data_ocorrencia: d(20), conta_id: cd.id, pagador_id: pL.id, forma_pagamento: 'dinheiro', ...ef(d(20)), vencimento: d(20) });
       // cartão
       const compras = [['Supermercado', 'Compras do mês', 'Supermercado BH', 3, 52000, 25000], ['Alimentação fora e delivery', 'iFood', 'iFood', 6, 4500, 6000],
-        ['Veículos e transporte', 'Combustível', 'Posto Ipiranga', 3, 18000, 9000], ['Assinaturas e tecnologia', 'Streaming', 'Netflix', 1, 5590, 0],
+        ['Veículos e transporte', 'Combustível', 'Posto Ipiranga', 3, 18000, 9000], ['Assinaturas e tecnologia', 'Netflix', 'Netflix', 1, 5590, 0],
         ['Lazer e passeios', 'Passeios', 'Parque', 1, 9000, 8000], ['Saúde', 'Medicamentos', 'Drogaria', 2, 6000, 5000], ['Supermercado', 'Feira', 'Feira livre', 3, 7000, 3000]];
       for (const [cn, sn, fav, qtd, vb, va] of compras) {
         for (let q = 0; q < qtd; q++) {
