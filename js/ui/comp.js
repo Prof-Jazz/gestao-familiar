@@ -25,6 +25,7 @@ export const LOGOS = [
   { id: 'sem-parar', nome: 'Sem Parar', cor: '#FF0A54', chaves: ['sem parar', 'pedagio'] },
   { id: 'cemig', nome: 'Cemig', cor: '#008E47', chaves: ['cemig'] },
   { id: 'algar', nome: 'Algar', cor: '#1C8BD0', chaves: ['algar'] },
+  { id: 'claro', nome: 'Claro', cor: '#E3262E', chaves: ['claro'] },
   { id: 'netflix', nome: 'Netflix', cor: '#E50914', chaves: ['netflix'] },
   { id: 'spotify', nome: 'Spotify', cor: '#1ED760', chaves: ['spotify'] },
   { id: 'prime-video', nome: 'Prime Video', cor: '#1FA8E0', chaves: ['prime video', 'amazon prime', 'prime'] },

@@ -579,7 +579,7 @@ declare
 begin
   if exists (select 1 from public.categorias) then return; end if;
   for cat in select * from (values
-    ('despesa','Moradia','house','#2563EB','Aluguel=key|Financiamento=landmark|Condomínio=building-2|Água=droplet|Energia=marca:cemig|Gás=flame|Internet=marca:algar|Manutenção=hammer|Móveis=sofa'),
+    ('despesa','Moradia','house','#2563EB','Aluguel=key|Financiamento=landmark|Condomínio=building-2|Água=droplet|Energia=marca:cemig|Gás=flame|Internet=marca:algar|Telefone=marca:claro|Manutenção=hammer|Móveis=sofa'),
     ('despesa','Supermercado','shopping-cart','#16A34A','Compras do mês=shopping-basket|Feira=apple|Açougue=beef|Padaria=croissant|Produtos de limpeza=spray-can'),
     ('despesa','Alimentação fora e delivery','utensils','#F97316','iFood=marca:ifood|Restaurantes=chef-hat|Lanches=sandwich|Cafés=coffee'),
     ('despesa','Veículos e transporte','car','#0F766E','Combustível=fuel|Seguro=shield-check|IPVA=receipt|Licenciamento=badge-check|Manutenção=wrench|Estacionamento=square-parking|Aplicativos=car-taxi-front|Uber=marca:uber|Sem Parar=marca:sem-parar'),

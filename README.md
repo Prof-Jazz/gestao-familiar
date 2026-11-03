@@ -81,7 +81,7 @@ Supabase → SQL Editor → cole todo o arquivo `supabase/schema.sql` → *Run*.
 
 Ao cadastrar ou editar uma **conta** ou um **cartão**, o campo *Ícone* oferece os logos de Nubank, Inter, Itaú, Banco do Brasil, Caixa, Santander, PicPay, Mercado Pago e Hotmart (arquivos em `img/bancos/`). Ao digitar o nome (ex.: “Conta Itaú”), o logo e a cor são sugeridos automaticamente — dá para trocar à vontade. 
 
-As **subcategorias** têm ícones próprios, e várias usam logos de serviços (`img/marcas/`): Cemig (Energia), Algar (Internet), iFood, Uber, Sem Parar, Netflix, Spotify, Prime Video, Disney+, HBO Max, YouTube Premium, ChatGPT, Claude, Adobe e Foxit. Em *Configurações → Categorias*, qualquer categoria ou subcategoria pode usar um desses logos. A migração que aplicou isso no banco existente está em `supabase/migracao-2026-10-31-subcategorias.sql`.
+As **subcategorias** têm ícones próprios, e várias usam logos de serviços (`img/marcas/`): Cemig (Energia), Algar (Internet), Claro (Telefone), iFood, Uber, Sem Parar, Netflix, Spotify, Prime Video, Disney+, HBO Max, YouTube Premium, ChatGPT, Claude, Adobe e Foxit. Em *Configurações → Categorias*, qualquer categoria ou subcategoria pode usar um desses logos. A migração que aplicou isso no banco existente está em `supabase/migracao-2026-10-31-subcategorias.sql`.
 
 Para incluir outro logo: salve um PNG quadrado em `img/bancos/<id>.png` e acrescente uma linha na lista `LOGOS` em `js/ui/comp.js`.
 
