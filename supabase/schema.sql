@@ -371,6 +371,10 @@ create index if not exists lancamentos_competencia_idx on public.lancamentos (co
 create index if not exists lancamentos_efetiva_idx on public.lancamentos (data_efetiva);
 create index if not exists lancamentos_cartao_idx on public.lancamentos (cartao_id, fatura);
 create index if not exists lancamentos_compra_idx on public.lancamentos (compra_id);
+-- migração v1.3: pagamento dividido (uma despesa paga com 2+ contas/cartões)
+alter table public.lancamentos add column if not exists divisao_id uuid;
+create index if not exists lancamentos_divisao_idx on public.lancamentos (divisao_id);
+
 
 -- ---------------------------------------------------------------------
 -- 5. Configurações (linha única)

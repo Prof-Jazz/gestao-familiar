@@ -89,7 +89,11 @@ Para incluir outro logo: salve um PNG quadrado em `img/bancos/<id>.png` e acresc
 
 Em **Análises → Evolução dos gastos**, ao tocar numa categoria (ex.: *Alimentação fora e delivery*), aparece abaixo do gráfico um painel com: total gasto (e variação contra o período anterior), quanto isso representa do total de despesas, número de lançamentos e média, o lugar onde mais gastou e o maior gasto único — além dos rankings **“Onde você mais gastou”** (por estabelecimento; se o campo estiver vazio, usa a descrição) e **por subcategoria**. Sem categoria escolhida, o painel mostra todos os gastos do período. Também há a **distribuição das receitas por categoria**, ao lado da de gastos.
 
-## 10. Estrutura do código
+## 10. Pagamento dividido
+
+Ao lançar uma despesa, use **“Paguei com mais de uma forma”** (abaixo de *Pago com*) para dividir o valor em 2 a 4 formas — ex.: R$ 100 em dinheiro na Carteira + o restante no crédito. O botão **Restante** completa o que falta, e o formulário só grava quando as partes somam exatamente o total. Cada parte é registrada na sua conta ou cartão (o saldo da conta cai só a parte dela; a parte do cartão vai para a fatura certa), e as partes ficam ligadas: na lista aparece o selo *dividido · total*, nos rankings a despesa conta uma vez só, e ao editar ou excluir dá para aplicar a todas as partes. Parcelamento e recorrência não se combinam com pagamento dividido.
+
+## 11. Estrutura do código
 
 ```
 supabase/schema.sql        banco: tabelas, RLS, triggers de autoria/histórico, categorias iniciais

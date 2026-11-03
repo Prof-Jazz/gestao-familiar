@@ -231,6 +231,22 @@ import { addMeses } from '../lib/fmt.js';
 const addMesesData = (iso, n) => addMeses(iso, n, Number(iso.slice(8, 10)));
 
 /** Edita um lançamento; para séries recorrentes, `escopo` = 'esta' | 'futuras'. */
+/** Despesa paga com 2 ou mais formas: uma linha por conta/cartão, ligadas pelo mesmo divisao_id. Soma = valor total. */
+export async function criarDividido(base, partes) {
+  const D = store.s.D;
+  const divisao_id = uuid();
+  const linhas = partes.map((p, i) => {
+    const cartao = p.cartao_id ? D.mapa.cartoes[p.cartao_id] : null;
+    const l = { ...base, id: i === 0 && base.id ? base.id : uuid(), valor_centavos: p.valor_centavos, conta_id: p.conta_id || null, cartao_id: p.cartao_id || null,
+      forma_pagamento: p.forma_pagamento || null, divisao_id, anexos: i === 0 ? base.anexos || [] : [], compra_id: null, parcela_num: null, parcelas_total: null };
+    if (cartao) { l.fatura = faturaDaCompra(cartao, l.data_ocorrencia); l.data_efetiva = l.status === 'previsto' ? null : l.data_ocorrencia; l.vencimento = null; }
+    else { l.fatura = null; if (l.status === 'efetivado') l.data_efetiva = base.data_efetiva || l.data_ocorrencia; else { l.data_efetiva = null; l.vencimento = base.vencimento || l.data_ocorrencia; } }
+    return l;
+  });
+  return inserir('lancamentos', linhas, 'div' + divisao_id);
+}
+export const partesDaDivisao = (D, divisaoId) => (divisaoId ? D.lancamentos.filter((l) => l.divisao_id === divisaoId && !l.excluido_em) : []);
+
 export async function editarLancamento(orig, novo, escopo = 'esta') {
   const r = await atualizar('lancamentos', orig.id, novo, orig.versao);
   if (escopo === 'futuras' && orig.recorrencia_id) {

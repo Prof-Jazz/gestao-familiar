@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Modal, CampoValor, Autoria, Sel, Campo, opcoesContas, opcoesPessoas, opcoesProjetos } from './comp.js';
-import { store, useStore, fecharForm, criarLancamento, editarLancamento, atualizar, paraLixeira, toast, escolher, confirmar,
+import { store, useStore, fecharForm, criarLancamento, criarDividido, partesDaDivisao, editarLancamento, atualizar, paraLixeira, toast, escolher, confirmar,
   enviarAnexos, urlAnexo, removerAnexoArquivo, historicoDe, nomeUsuario, abrirForm, encerrarRecorrencia } from '../data/store.js';
 import { hoje, dataBR, dataHoraBR, brl, primeiroDia, ymDe, uuid, nomeMesCap, addMesYM } from '../lib/fmt.js';
 import { faturaDaCompra, dividirParcelas, datasFatura } from '../lib/calc.js';
@@ -59,6 +59,7 @@ function Formulario({ cfg, D, perfil }) {
   const [arquivos, setArquivos] = useState([]);
   const [verHist, setVerHist] = useState(false);
   const [compManual, setCompManual] = useState(editando);
+  const [div, setDiv] = useState(null); // pagamento dividido: [{ k, valor, forma }]
   const set = (p) => setF((x) => ({ ...x, ...p }));
   const tipo = f.tipo;
   const ehCartao = !!f.cartao_id && tipo !== 'pagamento_fatura';
@@ -88,8 +89,8 @@ function Formulario({ cfg, D, perfil }) {
     setParcelas(1);
   };
 
-  function montar() {
-    const x = { ...f };
+  function montar(src = f) {
+    const x = { ...src };
     if (!x.valor_centavos || x.valor_centavos <= 0) throw new Error('Informe um valor maior que zero.');
     if (x.valor_centavos >= 1e13) throw new Error('Valor alto demais.');
     if (!x.data_ocorrencia) throw new Error('Informe a data.');
@@ -133,8 +134,13 @@ function Formulario({ cfg, D, perfil }) {
     e?.preventDefault();
     if (salvando) return;
     setErro('');
-    let x;
-    try { x = montar(); } catch (er) { setErro(er.message); return; }
+    let x, partes = null;
+    try {
+      if (div) {
+        partes = validarDivisao(div, f.valor_centavos);
+        x = montar({ ...f, ...origemDeK(partes[0].k) });
+      } else x = montar();
+    } catch (er) { setErro(er.message); return; }
     setSalvando(true);
     try {
       if (!x.id) x.id = uuid();
@@ -146,24 +152,28 @@ function Formulario({ cfg, D, perfil }) {
             { rotulo: 'Somente esta ocorrência', valor: 'esta' }, { rotulo: 'Esta e as próximas previstas', valor: 'futuras', sec: true }]);
           if (!escopo) { setSalvando(false); return; }
         }
-        if (orig.compra_id && orig.parcelas_total > 1) {
-          const tudo = await escolher('Compra parcelada', 'Aplicar descrição, categoria, pessoas, projeto e observações a:', [
-            { rotulo: `Somente a parcela ${orig.parcela_num}/${orig.parcelas_total}`, valor: 'esta' }, { rotulo: 'Todas as parcelas da compra', valor: 'todas', sec: true }]);
+        const ehParcela = orig.compra_id && orig.parcelas_total > 1;
+        if (ehParcela || orig.divisao_id) {
+          const tudo = await escolher(ehParcela ? 'Compra parcelada' : 'Pagamento dividido', 'Aplicar descrição, categoria, estabelecimento, projeto e observações a:', [
+            { rotulo: ehParcela ? `Somente a parcela ${orig.parcela_num}/${orig.parcelas_total}` : 'Somente esta parte do pagamento', valor: 'esta' },
+            { rotulo: ehParcela ? 'Todas as parcelas da compra' : 'Todas as partes do pagamento', valor: 'todas', sec: true }]);
           if (!tudo) { setSalvando(false); return; }
           await editarLancamento(orig, x, 'esta');
           if (tudo === 'todas') {
-            const campos = ['descricao', 'categoria_id', 'subcategoria_id', 'pagador_id', 'beneficiario_id', 'favorecido', 'projeto_id', 'observacoes', 'etiquetas'];
-            for (const p of store.s.D.lancamentos.filter((l) => l.compra_id === orig.compra_id && l.id !== orig.id && !l.excluido_em)) {
+            const campos = ['descricao', 'categoria_id', 'subcategoria_id', 'pagador_id', 'favorecido', 'projeto_id', 'observacoes', 'etiquetas'];
+            const irmaos = ehParcela ? store.s.D.lancamentos.filter((l) => l.compra_id === orig.compra_id) : store.s.D.lancamentos.filter((l) => l.divisao_id === orig.divisao_id);
+            for (const p of irmaos.filter((l) => l.id !== orig.id && !l.excluido_em)) {
               await atualizar('lancamentos', p.id, Object.fromEntries(campos.map((c) => [c, x[c] ?? null])), p.versao);
             }
           }
         } else await editarLancamento(orig, x, escopo);
         toast('Alterações salvas.');
       } else {
-        const r = await criarLancamento(x, { parcelas: ehCartao || tipo === 'despesa' ? parcelas : 1, recorrencia: rec.ativa ? { frequencia: rec.frequencia, fim: rec.fim || null } : null });
+        const r = partes ? await criarDividido(x, partes.map((p) => ({ ...origemDeK(p.k), valor_centavos: p.valor, forma_pagamento: p.forma })))
+          : await criarLancamento(x, { parcelas: ehCartao || tipo === 'despesa' ? parcelas : 1, recorrencia: rec.ativa ? { frequencia: rec.frequencia, fim: rec.fim || null } : null });
         if (!r) { setSalvando(false); return; }
         try { localStorage.setItem(LS, JSON.stringify({ conta_id: x.conta_id, cartao_id: x.cartao_id })); } catch {}
-        toast(parcelas > 1 ? `Compra registrada em ${parcelas} parcelas.` : rec.ativa ? 'Recorrência criada com as próximas previsões.' : `${NOME_TIPO[tipo]} registrada.`);
+        toast(partes ? `Despesa registrada, paga em ${partes.length} formas.` : parcelas > 1 ? `Compra registrada em ${parcelas} parcelas.` : rec.ativa ? 'Recorrência criada com as próximas previsões.' : `${NOME_TIPO[tipo]} registrada.`);
       }
       fecharForm();
     } catch (er) {
@@ -184,6 +194,10 @@ function Formulario({ cfg, D, perfil }) {
         if (!esc) return;
         const alvo = esc === 'todas' ? store.s.D.lancamentos.filter((l) => l.compra_id === orig.compra_id && !l.excluido_em) : [orig];
         for (const l of alvo) await paraLixeira(l);
+      } else if (orig.divisao_id) {
+        const esc = await escolher('Pagamento dividido', 'O que deseja excluir?', [{ rotulo: 'A despesa inteira (todas as partes)', valor: 'todas' }, { rotulo: 'Somente esta parte', valor: 'esta', sec: true }]);
+        if (!esc) return;
+        for (const l of esc === 'todas' ? partesDaDivisao(store.s.D, orig.divisao_id) : [orig]) await paraLixeira(l);
       } else await paraLixeira(orig);
       toast('Movido para a lixeira.'); fecharForm();
     } catch (er) { setErro(er.message); }
@@ -205,12 +219,14 @@ function Formulario({ cfg, D, perfil }) {
         <${Autoria} l=${orig} />
         ${orig.parcelas_total > 1 && html`<span class="pilula pri">Parcela ${orig.parcela_num}/${orig.parcelas_total}</span>`}
         ${orig.recorrencia_id && html`<span class="pilula pri"><${Icone} n="repeat" /> Recorrente</span>`}
+        ${orig.divisao_id && html`<span class="pilula pri"><${Icone} n="coins" /> Pagamento dividido</span>`}
         <span style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
           <button type="button" class="btn sec peq" onClick=${() => setVerHist(!verHist)}><${Icone} n="history" /> Histórico</button>
           <button type="button" class="btn sec peq" onClick=${() => abrirForm({ lancamento: orig, duplicar: true, chave: 'dup' + orig.id })}><${Icone} n="copy" /> Duplicar</button>
           ${orig.tipo === 'despesa' && html`<button type="button" class="btn sec peq" onClick=${() => abrirForm({ tipo: 'reembolso', chave: 'reemb' + orig.id, extra: reembolsoDe(D, orig) })}><${Icone} n="undo-2" /> Reembolso</button>`}
         </span></div>`}
       ${verHist && html`<${Historico} id=${orig.id} D=${D} />`}
+      ${editando && orig.divisao_id && html`<${ResumoDivisao} D=${D} orig=${orig} />`}
 
       ${!editando && tipo !== 'reembolso' && html`<div class="tipo-abas" role="tablist">
         ${['despesa', 'receita', 'transferencia'].map((t) => html`<button type="button" role="tab" aria-selected=${tipo === t} class=${(tipo === t ? 'on ' : '') + t} onClick=${() => trocarTipo(t)}>
@@ -233,10 +249,15 @@ function Formulario({ cfg, D, perfil }) {
         ${subs.length > 0 && html`<div class="campo"><span>Subcategoria</span><div class="chips">${subs.map((s) => html`<button type="button" class=${'chip' + (f.subcategoria_id === s.id ? ' on' : '')}
           onClick=${() => set({ subcategoria_id: f.subcategoria_id === s.id ? null : s.id })}><${Icone} n=${s.icone} />${s.nome}</button>`)}</div></div>`}`}
 
-      ${tipo !== 'transferencia' && tipo !== 'pagamento_fatura' && html`<div class="campo"><span>${tipo === 'receita' ? 'Recebido em' : tipo === 'reembolso' ? 'Creditado em' : 'Pago com'}</span>
+      ${div && html`<${DividirPagamento} D=${D} total=${f.valor_centavos} partes=${div} setPartes=${setDiv} origens=${origens} data=${f.data_ocorrencia} />`}
+      ${!div && tipo !== 'transferencia' && tipo !== 'pagamento_fatura' && html`<div class="campo"><span>${tipo === 'receita' ? 'Recebido em' : tipo === 'reembolso' ? 'Creditado em' : 'Pago com'}</span>
         ${origens.length ? html`<div class="chips">${origens.map((o) => html`<button type="button" class=${'chip' + (origemAtual === o.k ? ' on' : '')} onClick=${() => escolherOrigem(o)}
           style=${origemAtual === o.k ? `background:${o.cor};border-color:${o.cor}` : ''}><${Icone} n=${o.icone} />${o.nome}</button>`)}</div>`
           : html`<div class="aviso-msg">Cadastre uma conta em <a href="#/contas" onClick=${fecharForm}>Contas e cartões</a> antes de lançar.</div>`}
+        ${!editando && tipo === 'despesa' && origens.length > 0 && html`<button type="button" class="btn-link" onClick=${() => {
+          const o1 = origens.find((o) => o.k === origemAtual) || origens[0]; const o2 = origens.find((o) => o.k !== o1.k) || o1;
+          setDiv([{ k: o1.k, valor: null, forma: formaPadrao(D, o1) }, { k: o2.k, valor: null, forma: formaPadrao(D, o2) }]); setParcelas(1); setRec((r) => ({ ...r, ativa: false }));
+        }}><${Icone} n="coins" /> Paguei com mais de uma forma (dividir pagamento)</button>`}
         ${cartao && html`<small>Entra na fatura de <b>${nomeMesCap(f.fatura?.slice(0, 7) || faturaDaCompra(cartao, f.data_ocorrencia).slice(0, 7))}</b> (vence ${dataBR(datasFatura(cartao, f.fatura || faturaDaCompra(cartao, f.data_ocorrencia)).vencimento)}).</small>`}
       </div>`}
 
@@ -284,12 +305,12 @@ function Formulario({ cfg, D, perfil }) {
           </div>
           <${Campo} rot="Observações"><textarea class="inp" value=${f.observacoes || ''} onInput=${(e) => set({ observacoes: e.target.value })}></textarea></${Campo}>
 
-          ${!editando && tipo === 'despesa' && html`<div class="linha">
+          ${!editando && tipo === 'despesa' && !div && html`<div class="linha">
             <${Campo} rot="Parcelamento" dica=${ehCartao ? 'As parcelas entram nas faturas seguintes.' : 'Da 2ª em diante ficam previstas, mês a mês.'}>
               <${Sel} valor=${String(parcelas)} onChange=${(v) => { setParcelas(Number(v) || 1); if (Number(v) > 1) setRec({ ...rec, ativa: false }); }}
                 opcoes=${Array.from({ length: 24 }, (_, i) => ({ v: String(i + 1), r: i === 0 ? 'À vista' : `${i + 1} parcelas` }))} /></${Campo}>
           </div>`}
-          ${!editando && (tipo === 'despesa' || tipo === 'receita') && parcelas === 1 && html`<div class="pilha" style="gap:10px">
+          ${!editando && (tipo === 'despesa' || tipo === 'receita') && parcelas === 1 && !div && html`<div class="pilha" style="gap:10px">
             <label class="chk"><input type="checkbox" checked=${rec.ativa} onChange=${(e) => setRec({ ...rec, ativa: e.target.checked })} /> Repetir (recorrência)</label>
             ${rec.ativa && html`<div class="linha">
               <${Campo} rot="Frequência"><${Sel} valor=${rec.frequencia} onChange=${(v) => setRec({ ...rec, frequencia: v })} opcoes=${[{ v: 'semanal', r: 'Semanal' }, { v: 'quinzenal', r: 'Quinzenal' }, { v: 'mensal', r: 'Mensal' }, { v: 'anual', r: 'Anual' }]} /></${Campo}>
@@ -303,6 +324,64 @@ function Formulario({ cfg, D, perfil }) {
       <button type="submit" class="sr">Salvar</button>
     </form>
   </${Modal}>`;
+}
+
+// ------------------------------------------------------------------ pagamento dividido
+const origemDeK = (k) => (k?.startsWith('k:') ? { cartao_id: k.slice(2), conta_id: null } : { conta_id: k?.slice(2) || null, cartao_id: null });
+function formaPadrao(D, o) {
+  if (!o) return null;
+  if (o.cartao_id) return 'credito';
+  return D.mapa.contas[o.conta_id]?.tipo === 'dinheiro' ? 'dinheiro' : 'pix';
+}
+function validarDivisao(partes, total) {
+  if (!total || total <= 0) throw new Error('Informe primeiro o valor total da despesa.');
+  if (partes.length < 2) throw new Error('Para dividir, informe pelo menos duas formas de pagamento.');
+  partes.forEach((p, i) => {
+    if (!p.k) throw new Error(`Escolha a conta ou o cartão da forma ${i + 1}.`);
+    if (!p.valor || p.valor <= 0) throw new Error(`Informe o valor pago na forma ${i + 1}.`);
+  });
+  const soma = partes.reduce((s, p) => s + p.valor, 0);
+  if (soma !== total) throw new Error(`As formas somam ${brl(soma)}, mas o total da despesa é ${brl(total)} (${soma > total ? 'sobram' : 'faltam'} ${brl(Math.abs(total - soma))}).`);
+  return partes;
+}
+function DividirPagamento({ D, total, partes, setPartes, origens, data }) {
+  const soma = partes.reduce((s, p) => s + (p.valor || 0), 0);
+  const falta = (total || 0) - soma;
+  const setP = (i, q) => setPartes(partes.map((p, j) => (j === i ? { ...p, ...q } : p)));
+  const opcoes = [{ grupo: 'Contas', itens: origens.filter((o) => o.conta_id).map((o) => ({ v: o.k, r: o.nome })) },
+    ...(origens.some((o) => o.cartao_id) ? [{ grupo: 'Cartões de crédito', itens: origens.filter((o) => o.cartao_id).map((o) => ({ v: o.k, r: o.nome })) }] : [])];
+  return html`<div class="dividir">
+    <div class="dividir-cab"><b><${Icone} n="coins" /> Pago com mais de uma forma</b>
+      <button type="button" class="btn fantasma peq" onClick=${() => setPartes(null)}>Voltar a uma forma só</button></div>
+    ${partes.map((p, i) => {
+      const o = origens.find((x) => x.k === p.k);
+      return html`<div class="dividir-linha" key=${i}>
+        <span class="dividir-n">${i + 1}</span>
+        <label class="campo" style="flex:2 1 150px"><span>Conta ou cartão</span><${Sel} valor=${p.k} vazio="Escolha…" opcoes=${opcoes} onChange=${(k) => setP(i, { k, forma: formaPadrao(D, origens.find((x) => x.k === k)) })} /></label>
+        <label class="campo" style="flex:1 1 120px"><span>Forma</span><${Sel} valor=${p.forma} onChange=${(forma) => setP(i, { forma })} opcoes=${FORMAS.map(([v, r]) => ({ v, r }))} /></label>
+        <label class="campo" style="flex:1 1 120px"><span>Valor</span><${CampoValor} valor=${p.valor} onChange=${(valor) => setP(i, { valor })} /></label>
+        <span class="dividir-acoes">
+          ${!p.valor && falta > 0 && html`<button type="button" class="btn sec peq" onClick=${() => setP(i, { valor: falta })} title="Preencher com o que falta">Restante</button>`}
+          ${partes.length > 2 && html`<button type="button" class="btn fantasma ico peq" aria-label="Remover esta forma" onClick=${() => setPartes(partes.filter((_, j) => j !== i))}><${Icone} n="x" /></button>`}
+        </span>
+        ${o?.cartao_id && html`<small class="dividir-nota">Entra na fatura de ${nomeMesCap(faturaDaCompra(D.mapa.cartoes[o.cartao_id], data || hoje()).slice(0, 7))} do ${o.nome}.</small>`}
+      </div>`;
+    })}
+    <div class="dividir-rod">
+      ${partes.length < 4 && html`<button type="button" class="btn sec peq" onClick=${() => setPartes([...partes, { k: null, valor: falta > 0 ? falta : null, forma: null }])}><${Icone} n="plus" /> Outra forma</button>`}
+      <span style="flex:1"></span>
+      <span class="num">Total ${brl(total || 0)} · Distribuído ${brl(soma)} · </span>
+      <span class=${'pilula ' + (falta === 0 && total ? 'pos' : 'neg')}>${falta === 0 && total ? '✓ Fechou' : falta > 0 ? `Faltam ${brl(falta)}` : `Sobram ${brl(-falta)}`}</span>
+    </div>
+  </div>`;
+}
+function ResumoDivisao({ D, orig }) {
+  const partes = partesDaDivisao(D, orig.divisao_id);
+  const total = partes.reduce((s, l) => s + l.valor_centavos, 0);
+  return html`<div class="dividir" style="gap:6px"><b><${Icone} n="coins" /> Pagamento dividido — total ${brl(total)}</b>
+    ${partes.map((l) => { const c = D.mapa.cartoes[l.cartao_id] || D.mapa.contas[l.conta_id];
+      return html`<div class="dividir-resumo${l.id === orig.id ? ' atual' : ''}"><${Icone} n=${c?.icone || 'wallet'} /><span style="flex:1">${c?.nome || '?'} · ${NOME_FORMA[l.forma_pagamento] || '—'}${l.id === orig.id ? ' (esta parte)' : ''}</span><b class="num">${brl(l.valor_centavos)}</b></div>`; })}
+    <small style="color:var(--txt3)">Aqui você edita esta parte. Para mudar o valor de uma parte, ajuste também a outra, para o total continuar certo.</small></div>`;
 }
 
 export function reembolsoDe(D, l) {

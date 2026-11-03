@@ -30,7 +30,7 @@ export function ItemLanc({ l, D, compacto, semData }) {
   return html`<div class=${`item click ${l.status}`} onClick=${() => abrirForm({ lancamento: l })} role="button" tabIndex="0" onKeyDown=${(e) => e.key === 'Enter' && abrirForm({ lancamento: l })}>
     <${CatIcone} cor=${corIc} icone=${nIc} />
     <div class="meio">
-      <div class="t1">${l.descricao}${l.parcelas_total > 1 ? html` <span class="pilula pri">${l.parcela_num}/${l.parcelas_total}</span>` : ''}${l.recorrencia_id ? html` <${Icone} n="repeat" titulo="Recorrente" />` : ''}${(l.anexos || []).length ? html` <${Icone} n="paperclip" titulo="Com anexo" />` : ''}</div>
+      <div class="t1">${l.descricao}${l.parcelas_total > 1 ? html` <span class="pilula pri">${l.parcela_num}/${l.parcelas_total}</span>` : ''}${l.recorrencia_id ? html` <${Icone} n="repeat" titulo="Recorrente" />` : ''}${l.divisao_id ? html` <span class="pilula pri" title="Despesa paga com mais de uma forma"><${Icone} n="coins" /> dividido · total ${brl(D.lancamentos.filter((x) => x.divisao_id === l.divisao_id && !x.excluido_em).reduce((s, x) => s + x.valor_centavos, 0))}</span>` : ''}${(l.anexos || []).length ? html` <${Icone} n="paperclip" titulo="Com anexo" />` : ''}</div>
       <div class="t2 linha-conta">${origem}${detalhes ? html`<span>${detalhes}</span>` : ''}</div>
       ${!compacto && html`<div class="t2">${pagador ? (l.tipo === 'receita' ? 'Recebido por ' : 'Pago por ') + pagador + ' · ' : ''}<${Autoria} l=${l} curto /></div>`}
     </div>

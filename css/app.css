@@ -376,3 +376,16 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .rosca-centro small { font-size: 12px; color: var(--txt3); font-weight: 700; }
 .rosca-centro b { font-size: 18px; }
 .det-kpi.destaque > span { white-space: normal; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+/* ---------- pagamento dividido ---------- */
+.btn-link { border: 0; background: none; color: var(--pri); font-weight: 700; cursor: pointer; padding: 4px 0; display: inline-flex; gap: 6px; align-items: center; font-size: 13.5px; align-self: flex-start; }
+.btn-link:hover { text-decoration: underline; }
+.dividir { border: 1.5px dashed var(--pri); background: var(--pri-suave); border-radius: 16px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.dividir-cab { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.dividir-linha { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; background: #fff; border-radius: 12px; padding: 10px; border: 1px solid var(--borda); }
+.dividir-n { width: 26px; height: 26px; border-radius: 50%; background: var(--pri); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 13px; align-self: center; flex: none; }
+.dividir-acoes { display: flex; gap: 4px; align-items: center; min-height: 44px; }
+.dividir-nota { flex-basis: 100%; color: var(--txt3); font-size: 12px; }
+.dividir-rod { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+.dividir-resumo { display: flex; gap: 8px; align-items: center; background: #fff; border-radius: 10px; padding: 7px 10px; font-size: 13.5px; }
+.dividir-resumo.atual { outline: 2px solid var(--pri); }
+.dividir-resumo img.ic, .dividir-resumo .ic { width: 18px; height: 18px; }

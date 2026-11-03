@@ -188,11 +188,12 @@ export const valorReceita = (it) => (it.natureza === 'receita' ? it.valor : 0);
 
 export function totais(itens) {
   let receitas = 0, despesas = 0, qtdDespesas = 0;
+  const vistos = new Set();
   for (const it of itens) {
     receitas += valorReceita(it);
     const d = valorDespesa(it);
     despesas += d;
-    if (it.natureza === 'despesa') qtdDespesas++;
+    if (it.natureza === 'despesa') { const k = it.l.divisao_id || it.l.id; if (!vistos.has(k)) { vistos.add(k); qtdDespesas++; } }
   }
   return { receitas, despesas, resultado: receitas - despesas, qtdDespesas };
 }
@@ -222,8 +223,9 @@ export function agrupar(D, itens, por = 'categoria', valorFn = valorDespesa) {
       rot = c ? (por === 'subcategoria' && c.parent_id ? `${D.mapa.categorias[c.parent_id]?.nome ?? ''} › ${c.nome}` : c.nome) : 'Sem categoria';
       if (c) { cor = c.cor; icone = c.icone; }
     }
-    const e = g.get(chave) || { chave, rotulo: rot, cor, icone, categoria_id: catId, valor: 0, qtd: 0, itens: [] };
-    e.valor += v; if (it.natureza !== 'reembolso') e.qtd += 1; e.itens.push(it);
+    const e = g.get(chave) || { chave, rotulo: rot, cor, icone, categoria_id: catId, valor: 0, qtd: 0, itens: [], _vistos: new Set() };
+    const chaveCompra = it.l.divisao_id || it.l.id; // pagamento dividido conta como uma compra só
+    e.valor += v; if (it.natureza !== 'reembolso' && !e._vistos.has(chaveCompra)) { e._vistos.add(chaveCompra); e.qtd += 1; } e.itens.push(it);
     g.set(chave, e); total += v;
   }
   const arr = [...g.values()].filter((e) => e.valor !== 0);
