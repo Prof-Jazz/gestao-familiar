@@ -85,7 +85,11 @@ As **subcategorias** têm ícones próprios, e várias usam logos de serviços (
 
 Para incluir outro logo: salve um PNG quadrado em `img/bancos/<id>.png` e acrescente uma linha na lista `LOGOS` em `js/ui/comp.js`.
 
-## 9. Estrutura do código
+## 9. Análises: detalhamento por categoria
+
+Em **Análises → Evolução dos gastos**, ao tocar numa categoria (ex.: *Alimentação fora e delivery*), aparece abaixo do gráfico um painel com: total gasto (e variação contra o período anterior), quanto isso representa do total de despesas, número de lançamentos e média, o lugar onde mais gastou e o maior gasto único — além dos rankings **“Onde você mais gastou”** (por estabelecimento; se o campo estiver vazio, usa a descrição) e **por subcategoria**. Sem categoria escolhida, o painel mostra todos os gastos do período. Também há a **distribuição das receitas por categoria**, ao lado da de gastos.
+
+## 10. Estrutura do código
 
 ```
 supabase/schema.sql        banco: tabelas, RLS, triggers de autoria/histórico, categorias iniciais

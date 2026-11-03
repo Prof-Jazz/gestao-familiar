@@ -201,18 +201,20 @@ export function totaisMes(D, base, ym, f) {
 }
 
 /** Agrupa despesas por categoria-mãe (ou subcategoria / favorecido). */
-export function agrupar(D, itens, por = 'categoria') {
+export function agrupar(D, itens, por = 'categoria', valorFn = valorDespesa) {
   const g = new Map();
   let total = 0;
   for (const it of itens) {
-    const v = valorDespesa(it);
+    const v = valorFn(it);
     if (!v) continue;
     let chave, rot, cor = '#94A3B8', icone = 'ellipsis', catId = null;
     if (it.natureza === 'fatura') {
       chave = '__fatura'; rot = 'Pagamento de faturas de cartão'; cor = '#475569'; icone = 'credit-card';
     } else if (por === 'favorecido') {
-      rot = (it.l.favorecido || '').trim() || '(sem estabelecimento)'; chave = normalizar(rot);
-      const c = D.mapa.categorias[it.l.categoria_id]; if (c) { cor = c.cor; icone = c.icone; }
+      // estabelecimento informado; se vazio, a própria descrição (muitas vezes é o nome do lugar)
+      rot = (it.l.favorecido || '').trim() || (it.l.descricao || '').trim() || '(sem estabelecimento)'; chave = normalizar(rot);
+      const c = D.mapa.categorias[it.l.categoria_id]; const s = D.mapa.categorias[it.l.subcategoria_id];
+      if (c) { cor = c.cor; icone = s?.icone || c.icone; }
     } else {
       const id = por === 'subcategoria' ? (it.l.subcategoria_id || it.l.categoria_id) : it.l.categoria_id;
       const c = D.mapa.categorias[id];

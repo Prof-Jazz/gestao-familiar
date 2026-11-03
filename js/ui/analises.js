@@ -53,6 +53,7 @@ export function Analises() {
     const itensA = C.itensBase(D, base, PA.ini, PA.fim, f);
     const tot = C.totais(itens), totA = C.totais(itensA);
     const porCat = C.agrupar(D, itens, 'categoria');
+    const porCatRec = C.agrupar(D, itens, 'categoria', C.valorReceita);
     const rank = C.agrupar(D, itens, dimRank);
     // evolução
     const serie = C.serieTemporal(itens, P.ini, P.fim, gran);
@@ -66,7 +67,7 @@ export function Analises() {
     // saldo
     const ymIni = P.ini.slice(0, 7); const ymFim = addMesYM(H.slice(0, 7), 6) > P.fim.slice(0, 7) ? addMesYM(H.slice(0, 7), 6) : P.fim.slice(0, 7);
     const saldo = C.serieSaldo(D, ymIni, ymFim, H);
-    return { itens, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
+    return { itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
   }, [D, base, P.ini, P.fim, f, gran, cats.join(), dimRank, mes]);
 
   const rotSerie = (k) => (gran === 'mes' ? mesCurto(k) : dataBR(k).slice(0, 5));
@@ -123,19 +124,15 @@ export function Analises() {
           : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), borderColor: '#5B4FE9', backgroundColor: '#5B4FE922', fill: true, tension: .3, pointRadius: 2 }]),
         ...(comparar && !cats.length ? [{ label: 'Período anterior', data: r.serieA.vals.slice(0, r.serie.vals.length).map((v) => v / 100), borderColor: '#94A3B8', borderDash: [6, 5], tension: .3, pointRadius: 0 }] : []),
       ] }, options: optsEixo() }} />
+    ${(cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
   </div>
 
   <div class="grade g-2" style="margin-bottom:16px">
-    <div class="card"><h3><${Icone} n="chart-pie" /> Distribuição por categoria <span class="acao"><${Base} base=${base} /></span></h3>
-      ${r.porCat.grupos.length ? html`
-        <${Grafico} chave=${'pz' + chave} altura=${240} rotulo="Distribuição por categoria" onClique=${(i) => setFatia(C.rankingValor(r.porCat.grupos)[i])} cfg=${{ type: 'doughnut',
-          data: { labels: C.rankingValor(r.porCat.grupos).map((g) => g.rotulo), datasets: [{ data: C.rankingValor(r.porCat.grupos).map((g) => g.valor / 100), backgroundColor: C.rankingValor(r.porCat.grupos).map((g) => g.cor), borderColor: '#fff', borderWidth: 2 }] },
-          options: { cutout: '60%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${brl(Math.round(c.raw * 100))} (${pct(r.porCat.total ? c.raw * 100 / r.porCat.total * 100 : 0)})` } } } } }} />
-        <div class="legenda" style="margin-top:12px">${C.rankingValor(r.porCat.grupos).map((g) => html`<div class="lg" role="button" tabIndex="0" onClick=${() => setFatia(g)} onKeyDown=${(e) => e.key === 'Enter' && setFatia(g)}>
-          <${CatIcone} p cor=${g.cor} icone=${g.icone} /><span class="nm">${g.rotulo}</span><b class="num">${brl(g.valor)}</b><span class="pc">${pct(g.pct)}</span></div>`)}</div>
-        <div style="font-size:12px;color:var(--txt3);margin-top:6px">Toque numa fatia ou categoria para ver os lançamentos.</div>`
-      : html`<${Vazio} icone="chart-pie" titulo="Sem despesas no período" />`}
-    </div>
+    <${Distribuicao} titulo="Distribuição dos gastos por categoria" icone="chart-pie" ag=${r.porCat} chave=${'pz' + chave} base=${base} abrir=${setFatia} vazio="Sem despesas no período" />
+    <${Distribuicao} titulo="Distribuição das receitas por categoria" icone="hand-coins" ag=${r.porCatRec} chave=${'pr' + chave} base=${base} abrir=${setFatia} vazio="Sem receitas no período" receita />
+  </div>
+
+  <div class="grade" style="margin-bottom:16px">
     <div class="card"><h3><${Icone} n="chart-column" /> Receitas × despesas <span class="acao"><${Base} base=${base} /></span></h3>
       <${Grafico} chave=${'rx' + chave} altura=${300} rotulo="Receitas versus despesas por mês" cfg=${{ type: 'bar',
         data: { labels: r.meses.map(mesCurto), datasets: [
@@ -178,6 +175,64 @@ export function Analises() {
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px"><span class="pilula pri">${brl(fatia.valor)}</span><span class="pilula zero">${fatia.qtd} lançamento(s)</span><span class="pilula zero">${pct(fatia.pct)} do total</span><${Base} base=${base} /></div>
     <div class="lista">${fatia.itens.slice().sort((a, b) => b.data.localeCompare(a.data)).map((it) => html`<${ItemLanc} l=${it.l} D=${D} />`)}</div>
   </${Modal}>`}`;
+}
+
+function Distribuicao({ titulo, icone, ag, chave, base, abrir, vazio, receita }) {
+  const gs = C.rankingValor(ag.grupos);
+  return html`<div class="card"><h3><${Icone} n=${icone} /> ${titulo} <span class="acao"><${Base} base=${base} /></span></h3>
+    ${gs.length ? html`
+      <div style="position:relative">
+        <${Grafico} chave=${chave} altura=${240} rotulo=${titulo} onClique=${(i) => abrir(gs[i])} cfg=${{ type: 'doughnut',
+          data: { labels: gs.map((g) => g.rotulo), datasets: [{ data: gs.map((g) => g.valor / 100), backgroundColor: gs.map((g) => g.cor), borderColor: '#fff', borderWidth: 2 }] },
+          options: { cutout: '62%', plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ` ${c.label}: ${brl(Math.round(c.raw * 100))} (${pct(ag.total ? (c.raw * 10000) / ag.total : 0)})` } } } } }} />
+        <div class="rosca-centro"><small>${receita ? 'Total recebido' : 'Total gasto'}</small><b class="num" style=${receita ? 'color:var(--pos)' : ''}>${brl(ag.total)}</b></div>
+      </div>
+      <div class="legenda" style="margin-top:12px">${gs.map((g) => html`<div class="lg" role="button" tabIndex="0" onClick=${() => abrir(g)} onKeyDown=${(e) => e.key === 'Enter' && abrir(g)}>
+        <${CatIcone} p cor=${g.cor} icone=${g.icone} /><span class="nm">${g.rotulo}</span><b class="num">${brl(g.valor)}</b><span class="pc">${pct(g.pct)}</span></div>`)}</div>
+      <div style="font-size:12px;color:var(--txt3);margin-top:6px">Toque numa fatia ou categoria para ver os lançamentos.</div>`
+    : html`<${Vazio} icone=${icone} titulo=${vazio} />`}
+  </div>`;
+}
+
+/** Detalhamento de uma categoria (ou de todos os gastos): quanto, quanto do total, onde e em quê. */
+function DetalheGastos({ D, catId, itens, itensA, totalPeriodo, base, abrir }) {
+  const cat = catId ? D.mapa.categorias[catId] : null;
+  const filtrar = (arr) => (catId ? arr.filter((it) => it.l.categoria_id === catId) : arr);
+  const its = filtrar(itens).filter((it) => C.valorDespesa(it));
+  const tot = C.totais(its).despesas, totA = C.totais(filtrar(itensA)).despesas;
+  const qtd = its.filter((it) => it.natureza === 'despesa' || it.natureza === 'fatura').length;
+  const maior = its.filter((it) => it.natureza !== 'reembolso').sort((a, b) => b.valor - a.valor)[0];
+  const lugares = C.rankingValor(C.agrupar(D, its, 'favorecido').grupos);
+  const subs = C.rankingValor(C.agrupar(D, its, catId ? 'subcategoria' : 'categoria').grupos).map((g) => ({ ...g, rotulo: catId && g.categoria_id !== catId ? g.rotulo.split(' › ').pop() : catId ? 'Sem subcategoria' : g.rotulo }));
+  const cor = cat?.cor || '#5B4FE9';
+  const titulo = cat ? cat.nome : 'Todos os gastos do período';
+  if (!its.length) return html`<div class="detalhe-gasto" style=${`--c:${cor}`}><div class="det-cab"><${CatIcone} cor=${cor} icone=${cat?.icone || 'coins'} /><b>${titulo}</b></div>
+    <${Vazio} icone="search" titulo="Nenhum gasto nesta categoria no período" texto="Escolha outro período ou outra categoria." /></div>`;
+  const Lista = ({ titulo: t, grupos, icone }) => {
+    const topo = grupos[0]?.valor || 1;
+    return html`<div class="det-lista"><h4><${Icone} n=${icone} /> ${t}</h4>
+      ${grupos.slice(0, 10).map((g, i) => html`<button type="button" class="det-linha" onClick=${() => abrir(g)} title="Ver os lançamentos">
+        <span class=${'rank-pos p' + (i + 1)}>${i + 1}</span><${CatIcone} p cor=${g.cor} icone=${g.icone} />
+        <span class="det-meio"><span class="det-nome">${g.rotulo}</span><span class="det-barra"><i style=${`width:${Math.max(2, (g.valor / topo) * 100)}%;background:${cor}`}></i></span>
+          <small>${g.qtd} lançamento(s) · ${pct(tot ? (g.valor / tot) * 100 : 0)} ${cat ? 'da categoria' : 'do total'}</small></span>
+        <b class="num">${brl(g.valor)}</b></button>`)}
+      ${grupos.length > 10 && html`<small style="color:var(--txt3)">+ ${grupos.length - 10} outros</small>`}</div>`;
+  };
+  return html`<div class="detalhe-gasto" style=${`--c:${cor}`}>
+    <div class="det-cab"><${CatIcone} cor=${cor} icone=${cat?.icone || 'coins'} /><b>${titulo}</b><span style="flex:1"></span><${Base} base=${base} /></div>
+    <div class="det-kpis">
+      <div class="det-kpi destaque"><small>Total gasto</small><b class="num">${brl(tot)}</b><span><${Variacao} v=${variacao(tot, totA)} inverso /> vs. período anterior</span></div>
+      ${cat && html`<div class="det-kpi"><small>Do total de despesas</small><b class="num">${pct(totalPeriodo ? (tot / totalPeriodo) * 100 : 0)}</b><span class="det-barra"><i style=${`width:${totalPeriodo ? Math.min(100, (tot / totalPeriodo) * 100) : 0}%;background:${cor}`}></i></span></div>`}
+      <div class="det-kpi"><small>Lançamentos</small><b class="num">${qtd}</b><span>Média ${qtd ? brl(Math.round(tot / qtd)) : '—'} cada</span></div>
+      <div class="det-kpi"><small>Lugar onde mais gastou</small><b>${lugares[0]?.rotulo || '—'}</b><span>${lugares[0] ? `${brl(lugares[0].valor)} · ${pct(tot ? (lugares[0].valor / tot) * 100 : 0)}` : ''}</span></div>
+      ${maior && html`<div class="det-kpi"><small>Maior gasto único</small><b class="num">${brl(maior.valor)}</b><span>${maior.l.descricao} · ${dataBR(maior.data)}</span></div>`}
+    </div>
+    <div class="grade g-2">
+      <${Lista} titulo="Onde você mais gastou" grupos=${lugares} icone="store" />
+      <${Lista} titulo=${cat ? 'Por subcategoria' : 'Por categoria'} grupos=${subs} icone="tag" />
+    </div>
+    <small style="color:var(--txt3)">“Lugar” é o estabelecimento informado no lançamento; quando ele está vazio, usamos a descrição. Toque numa linha para ver os lançamentos.</small>
+  </div>`;
 }
 
 export function Variacao({ v, inverso }) {
