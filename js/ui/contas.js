@@ -85,7 +85,7 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
   const catJuros = D.categorias.find((x) => x.nome === 'Tributos e serviços financeiros' && !x.parent_id);
   const subJuros = D.categorias.find((x) => x.parent_id === catJuros?.id && /encargos|juros/i.test(x.nome));
   const BotaoPagarCartao = proxPagar ? html`<button class="btn verde" style="width:100%;margin-top:10px;justify-content:center" onClick=${() => setPagar(proxPagar)}>
-      <${Icone} n="check" /> Pagar fatura de ${nomeMesCap(proxPagar.fatura.slice(0, 7))} · ${brl(proxPagar.aberto + proxPagar.previstas)}</button>`
+      <${Icone} n="check" /> Pagar fatura</button>`
     : html`<div class="lim" style="margin-top:8px">Nenhuma fatura a pagar no momento.</div>`;
   const pctLim = c.limite_centavos ? (lim.comprometido / c.limite_centavos) * 100 : 0;
 
@@ -120,7 +120,7 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
             <${Icone} n="badge-percent" /> Juros/encargos</button>
           <button class="btn sec peq" onClick=${saldoAnterior} title="Informar o que já estava no cartão antes de usar a plataforma"><${Icone} n="history" /> Saldo anterior</button>
           <button class="btn sec peq" onClick=${() => abrirForm({ tipo: 'despesa', chave: 'compra' + c.id, extra: { cartao_id: c.id, conta_id: null, forma_pagamento: 'credito' } })}><${Icone} n="plus" /> Compra</button>
-          ${f && f.aberto + f.previstas > 0 && html`<button class="btn verde peq" onClick=${() => setPagar(f)}><${Icone} n="check" /> ${f.status === 'aberta' ? 'Pagar / antecipar fatura' : 'Pagar fatura'}</button>`}
+          ${f && f.aberto + f.previstas > 0 && html`<button class="btn verde peq" onClick=${() => setPagar(f)}><${Icone} n="check" /> Pagar fatura</button>`}
         </div>
         ${f && html`<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px">
           <${Mini} r="Fechamento" v=${dataBR(f.fechamento)} /><${Mini} r="Vencimento" v=${dataBR(f.vencimento)} />
