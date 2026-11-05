@@ -1,6 +1,6 @@
 // Indicadores de saúde financeira (funções puras). Valores em centavos.
 import * as C from './calc.js';
-import { primeiroDia, ultimoDia, addMesYM, difMeses } from './fmt.js';
+import { primeiroDia, ultimoDia, addMesYM } from './fmt.js';
 
 const nivel = (n, rot) => ({ n, rot }); // n: 'otimo' | 'bom' | 'atencao' | 'critico' | 'neutro'
 
@@ -11,7 +11,8 @@ const nivel = (n, rot) => ({ n, rot }); // n: 'otimo' | 'bom' | 'atencao' | 'cri
 export function saudeFinanceira(D, ini, fim, hoje, f = {}) {
   const itens = C.itensBase(D, 'consumo', ini, fim, f);
   const tot = C.totais(itens);
-  const nMeses = Math.max(1, difMeses(ini.slice(0, 7), fim.slice(0, 7)) + 1);
+  // meses com algum movimento (evita diluir a média em meses anteriores ao uso da plataforma)
+  const nMeses = Math.max(1, new Set(itens.map((it) => it.data.slice(0, 7))).size);
   const recMedia = Math.round(tot.receitas / nMeses), gastoMedio = Math.round(tot.despesas / nMeses);
 
   // 1. Taxa de poupança
@@ -20,8 +21,13 @@ export function saudeFinanceira(D, ini, fim, hoje, f = {}) {
     : taxa >= 20 ? nivel('otimo', 'Ótima') : taxa >= 10 ? nivel('bom', 'Boa') : taxa >= 0 ? nivel('atencao', 'Apertada') : nivel('critico', 'Gastos maiores que as receitas');
 
   // 2. Juros e encargos pagos (subcategorias de juros/encargos)
-  const ehJuros = (l) => /juros|encargo/i.test(D.mapa.categorias[l.subcategoria_id]?.nome || '') || /juros|iof|encargo/i.test(l.descricao || '');
-  const juros = itens.filter((it) => C.valorDespesa(it) > 0 && ehJuros(it.l)).reduce((s, it) => s + C.valorDespesa(it), 0);
+  // Parte de juros: campo juros_centavos (parcelamentos) ou lançamentos de juros/IOF inteiros.
+  const jurosDe = (it) => {
+    const l = it.l;
+    if (l.juros_centavos > 0) return Math.min(l.juros_centavos, C.valorDespesa(it));
+    return /^juros/i.test(D.mapa.categorias[l.subcategoria_id]?.nome || '') || /juros|iof/i.test(l.descricao || '') ? C.valorDespesa(it) : 0;
+  };
+  const juros = itens.filter((it) => C.valorDespesa(it) > 0).reduce((s, it) => s + jurosDe(it), 0);
   const pJuros = tot.receitas > 0 ? (juros / tot.receitas) * 100 : null;
   const iJuros = juros === 0 ? nivel('otimo', 'Nenhum juro pago') : pJuros != null && pJuros < 2 ? nivel('atencao', 'Pouco, mas evitável') : nivel('critico', 'Alto');
 
