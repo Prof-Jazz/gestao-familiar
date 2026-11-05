@@ -38,12 +38,14 @@ export function Analises() {
   const [livre, setLivre] = useState({ ini: primeiroDia(mes), fim: ultimoDia(mes) });
   const [f, setF] = useState({});
   const [gran, setGran] = useState('mes');
+  const [tipoEv, setTipoEv] = useState('gastos');
   const [cats, setCats] = useState([]);
   const [dimRank, setDimRank] = useState('categoria');
   const [fatia, setFatia] = useState(null);
   const [verFiltros, setVerFiltros] = useState(false);
   const set = (p) => setF((x) => { const n = { ...x, ...p }; for (const k in n) if (!n[k]) delete n[k]; return n; });
   const P = periodoDe(preset, mes, livre);
+  const mudarPreset = (v) => { setPreset(v); setGran(v === 'mes' || v === 'livre' ? 'dia' : 'mes'); };
   const PA = periodoAnterior(P);
   const H = hoje();
 
@@ -83,7 +85,7 @@ export function Analises() {
 
   <div class="card" style="margin-bottom:16px">
     <div class="filtros">
-      <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${setPreset} opcoes=${[{ v: 'mes', r: 'Mês selecionado' }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
+      <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${mudarPreset} opcoes=${[{ v: 'mes', r: 'Mês selecionado' }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
       ${preset === 'livre' && html`<${Campo} rot="De"><input class="inp" type="date" value=${livre.ini} onInput=${(e) => setLivre({ ...livre, ini: e.target.value })} /></${Campo}>
         <${Campo} rot="Até"><input class="inp" type="date" value=${livre.fim} onInput=${(e) => setLivre({ ...livre, fim: e.target.value })} /></${Campo}>`}
       <button class="btn sec" onClick=${() => setVerFiltros(!verFiltros)}><${Icone} n="filter" /> Filtros${Object.keys(f).length ? ` (${Object.keys(f).length})` : ''}</button>
@@ -110,21 +112,25 @@ export function Analises() {
   <${Comparacao3} tres=${r.tres} />
 
   ${r.itens.length === 0 ? html`<div class="card"><${Vazio} icone="chart-line" titulo="Sem dados para estes filtros" texto="Não há lançamentos realizados no período e base escolhidos. Ajuste o período, a base ou os filtros." /></div>` : html`
-  <div class="card" style="margin-bottom:16px"><h3><${Icone} n="chart-line" /> Evolução das receitas e dos gastos</h3>
+  <div class="card" style="margin-bottom:16px"><h3><${Icone} n="chart-column" /> Evolução ${tipoEv === 'gastos' ? 'dos gastos' : 'das receitas'}</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
-      <div class="btn-grupo">${[['dia', 'Diária'], ['semana', 'Semanal'], ['mes', 'Mensal']].map(([v, t]) => html`<button class=${gran === v ? 'on' : ''} onClick=${() => setGran(v)}>${t}</button>`)}</div>
+      <div class="btn-grupo ev-tipo">
+        <button class=${tipoEv === 'gastos' ? 'on gastos' : ''} onClick=${() => setTipoEv('gastos')}><${Icone} n="arrow-down" /> Gastos</button>
+        <button class=${tipoEv === 'receitas' ? 'on receitas' : ''} onClick=${() => { setTipoEv('receitas'); setCats([]); }}><${Icone} n="arrow-up" /> Receitas</button></div>
+      <div class="btn-grupo">${[['dia', 'Por dia'], ['semana', 'Por semana'], ['mes', 'Por mês']].map(([v, t]) => html`<button class=${gran === v ? 'on' : ''} onClick=${() => setGran(v)}>${t}</button>`)}</div>
     </div>
-    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:6px">Para ver uma categoria de gasto em detalhe, toque nela:</div>
+    ${tipoEv === 'gastos' && html`<div style="font-size:12.5px;color:var(--txt3);margin-bottom:6px">Para ver uma categoria em detalhe, toque nela:</div>
     <div class="chips" style="margin-bottom:10px">${catsDesp.map((c) => html`<button class=${'chip' + (cats.includes(c.id) ? ' on' : '')} style=${cats.includes(c.id) ? `background:${c.cor};border-color:${c.cor}` : ''}
-      onClick=${() => setCats(cats.includes(c.id) ? cats.filter((x) => x !== c.id) : [...cats, c.id])}><${Icone} n=${c.icone} />${c.nome}</button>`)}</div>
-    <${Grafico} chave=${'ev' + chave} altura=${300} rotulo="Evolução das receitas e dos gastos" cfg=${{ type: 'line',
-      data: { labels: r.serie.chaves.map(rotSerie), datasets: [
-        ...(cats.length ? r.porCatSerie.map(({ id, s }) => ({ label: D.mapa.categorias[id]?.nome, data: s.vals.map((v) => v / 100), borderColor: D.mapa.categorias[id]?.cor, backgroundColor: D.mapa.categorias[id]?.cor + '22', tension: .3, pointRadius: 2 }))
-          : [{ label: 'Receitas', data: r.serieRec.vals.map((v) => v / 100), borderColor: '#16A34A', backgroundColor: '#16A34A1A', fill: true, tension: .3, pointRadius: 3 },
-             { label: 'Gastos', data: r.serie.vals.map((v) => v / 100), borderColor: '#E11D48', backgroundColor: '#E11D481A', fill: true, tension: .3, pointRadius: 3 }]),
-      ] }, options: optsEixo() }} />
-    ${(cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
-    ${!cats.length && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
+      onClick=${() => setCats(cats.includes(c.id) ? cats.filter((x) => x !== c.id) : [...cats, c.id])}><${Icone} n=${c.icone} />${c.nome}</button>`)}</div>`}
+    <${Grafico} chave=${'ev' + tipoEv + chave} altura=${300} rotulo=${tipoEv === 'gastos' ? 'Evolução dos gastos' : 'Evolução das receitas'} cfg=${{ type: 'bar',
+      data: { labels: r.serie.chaves.map(rotSerie), datasets:
+        tipoEv === 'receitas' ? [{ label: 'Receitas', data: r.serieRec.vals.map((v) => v / 100), backgroundColor: '#16A34A', borderRadius: 6, maxBarThickness: 46 }]
+        : cats.length ? r.porCatSerie.map(({ id, s }) => ({ label: D.mapa.categorias[id]?.nome, data: s.vals.map((v) => v / 100), backgroundColor: D.mapa.categorias[id]?.cor, borderRadius: 6, maxBarThickness: 46 }))
+        : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), backgroundColor: '#E11D48', borderRadius: 6, maxBarThickness: 46 }] },
+      options: optsEixo({ plugins: { legend: { display: cats.length > 1 }, tooltip: { callbacks: { label: tip } } } }) }} />
+    <div class="ev-total">Total ${tipoEv === 'gastos' ? 'gasto' : 'recebido'} no período: <b class="num">${brl(tipoEv === 'gastos' ? r.tot.despesas : r.tot.receitas)}</b></div>
+    ${tipoEv === 'gastos' && (cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
+    ${tipoEv === 'receitas' && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
   </div>
 
   <div class="grade g-2" style="margin-bottom:16px">
