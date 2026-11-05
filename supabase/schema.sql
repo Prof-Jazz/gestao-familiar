@@ -210,6 +210,9 @@ create table if not exists public.cartoes (
 
 -- migração v1.1: ícone/logo do cartão (para bancos já criados)
 alter table public.cartoes add column if not exists icone text not null default 'credit-card';
+-- Visual do cartão (modelo de arte) e regra de limite do banco
+alter table public.cartoes add column if not exists modelo text;
+alter table public.cartoes add column if not exists limite_so_principal boolean not null default false;
 
 create table if not exists public.projetos (
   id        uuid primary key default gen_random_uuid(),
@@ -373,6 +376,12 @@ create index if not exists lancamentos_cartao_idx on public.lancamentos (cartao_
 create index if not exists lancamentos_compra_idx on public.lancamentos (compra_id);
 -- migração v1.4: saldo anterior de cartão já em uso (conta na fatura e no limite, não nos gastos do mês)
 alter table public.lancamentos add column if not exists ajuste_inicial boolean not null default false;
+-- Parte do valor que é juros embutido (parcelamentos de fatura). Em cartões com
+-- limite_so_principal, essa parte não ocupa o limite.
+alter table public.lancamentos add column if not exists juros_centavos bigint not null default 0;
+do $$ begin
+  alter table public.lancamentos add constraint juros_ok check (juros_centavos >= 0 and juros_centavos <= valor_centavos);
+exception when duplicate_object then null; end $$;
 
 -- migração v1.3: pagamento dividido (uma despesa paga com 2+ contas/cartões)
 alter table public.lancamentos add column if not exists divisao_id uuid;

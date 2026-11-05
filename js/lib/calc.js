@@ -9,7 +9,7 @@
 // Transferências entre contas não entram em nenhuma das duas (só movem saldo).
 // Aportes em metas/projetos são reservas, não despesas.
 
-import { addMesYM, addMeses, addDias, diasNoMes, ultimoDia, primeiroDia, ymDe, difMeses, normalizar } from './fmt.js';
+import { hoje as hojeSP, addMesYM, addMeses, addDias, diasNoMes, ultimoDia, primeiroDia, ymDe, difMeses, normalizar } from './fmt.js';
 
 export const vivos = (D) => D.lancamentos.filter((l) => !l.excluido_em);
 export const BASES = {
@@ -76,11 +76,14 @@ export function faturasDoCartao(D, cartao, hoje) {
   set.add(atual); set.add(primeiroDia(addMesYM(atual.slice(0, 7), 1)));
   return [...set].sort().map((f) => resumoFatura(D, cartao, f, hoje));
 }
-export function limiteCartao(D, cartao) {
+export function limiteCartao(D, cartao, hoje = hojeSP()) {
+  // Alguns bancos (ex.: Santander) só reservam no limite o principal dos parcelamentos;
+  // os juros de cada parcela passam a ocupar o limite quando a fatura dela fecha.
+  const soPrincipal = (l) => cartao.limite_so_principal && l.juros_centavos > 0 && datasFatura(cartao, l.fatura).fechamento > hoje;
   let comprometido = 0;
   for (const l of vivos(D)) {
     if (l.cartao_id !== cartao.id || l.status !== 'efetivado') continue;
-    if (l.tipo === 'despesa') comprometido += l.valor_centavos;
+    if (l.tipo === 'despesa') comprometido += l.valor_centavos - (soPrincipal(l) ? l.juros_centavos : 0);
     else if (l.tipo === 'reembolso' || l.tipo === 'pagamento_fatura') comprometido -= l.valor_centavos;
   }
   comprometido = Math.max(0, comprometido);

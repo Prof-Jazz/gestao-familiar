@@ -389,3 +389,22 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .dividir-resumo { display: flex; gap: 8px; align-items: center; background: #fff; border-radius: 10px; padding: 7px 10px; font-size: 13.5px; }
 .dividir-resumo.atual { outline: 2px solid var(--pri); }
 .dividir-resumo img.ic, .dividir-resumo .ic { width: 18px; height: 18px; }
+
+/* Arte de cartões reais */
+.cc-arte { position: relative; aspect-ratio: 1.586; border-radius: 18px; overflow: hidden; box-shadow: var(--sombra-forte); container-type: inline-size; }
+.cc-santander-elite { background:
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(0deg, rgba(0,0,0,.18) 0 2px, transparent 2px 7px),
+    linear-gradient(160deg, #3D3E40 0%, #2B2C2E 45%, #353638 75%, #232425 100%); }
+.cc-santander-elite::before { content: ''; position: absolute; inset: 0; background: radial-gradient(120% 80% at 20% 0%, rgba(255,255,255,.10), transparent 60%); }
+.sa-marca { position: absolute; left: 7.5%; top: 9.5%; display: flex; align-items: center; gap: 2.2cqw; color: #E6E6E6; }
+.sa-marca img { width: 6.6cqw; height: 6.6cqw; filter: brightness(0) invert(.9); }
+.sa-marca span { font-size: 6.6cqw; font-weight: 500; letter-spacing: -.01em; line-height: 1; }
+.sa-chip { position: absolute; left: 11.3%; top: 33.5%; width: 12.3%; }
+.sa-elite { position: absolute; left: 50%; top: 42.5%; transform: translate(-50%, -50%); color: #D6D6D6; font-weight: 600; font-size: 3.4cqw; letter-spacing: 3.6cqw; padding-left: 3.6cqw; }
+.sa-nfc { position: absolute; right: 7%; top: 34%; width: 6.2%; }
+.sa-mc { position: absolute; right: 4.3%; bottom: 7.5%; width: 19.5%; }
+.cc-info { background: var(--card, #fff); border: 1px solid var(--borda, #e5e7eb); border-radius: 14px; padding: 12px 14px; }
+.cc-info .nm { font-weight: 800; font-size: 16px; }
+.cc-info .lim { font-size: 13px; color: var(--txt3); }
+.cc-info .neg { color: var(--neg); }

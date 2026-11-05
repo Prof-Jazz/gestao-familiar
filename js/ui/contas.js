@@ -51,6 +51,22 @@ export function Contas() {
   ${saldoIni && html`<${SaldoAnteriorCartao} c=${D.mapa.cartoes[saldoIni.id] || saldoIni} D=${D} fechar=${() => setSaldoIni(null)} />`}`;
 }
 
+export const MODELOS_CARTAO = { 'santander-elite': 'Santander Elite (grafite)' };
+
+/** Arte do cartão desenhada para parecer com o cartão físico. */
+function ArteCartao({ modelo }) {
+  if (modelo === 'santander-elite') return html`<div class="cc-arte cc-santander-elite" role="img" aria-label="Cartão Santander Elite">
+    <div class="sa-marca"><img src="img/bancos/santander.png" alt="" /><span>Santander</span></div>
+    <svg class="sa-chip" viewBox="0 0 60 46" aria-hidden="true"><defs><linearGradient id="chipG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F4F4"/><stop offset=".5" stop-color="#C9CACC"/><stop offset="1" stop-color="#ECECEC"/></linearGradient></defs>
+      <rect x=".5" y=".5" width="59" height="45" rx="7" fill="url(#chipG)" stroke="#9A9B9E"/>
+      <path d="M0 15h17q5 0 7-5l3-10M60 15H43q-5 0-7-5l-3-10M0 31h17q5 0 7 5l3 10M60 31H43q-5 0-7 5l-3 10M24 15h12M24 31h12M24 15v16M36 15v16" fill="none" stroke="#8E8F92" stroke-width="1.4"/></svg>
+    <span class="sa-elite">ELITE</span>
+    <svg class="sa-nfc" viewBox="0 0 24 34" aria-hidden="true"><g fill="none" stroke="#D9D9D9" stroke-width="2.6" stroke-linecap="round"><path d="M3 13q2.5 4 0 8"/><path d="M8.5 9.5q5 7.5 0 15"/><path d="M14 6q7.5 11 0 22"/><path d="M19.5 2.5q10 14.5 0 29"/></g></svg>
+    <svg class="sa-mc" viewBox="0 0 100 62" aria-hidden="true"><circle cx="31" cy="31" r="31" fill="#EB001B"/><circle cx="69" cy="31" r="31" fill="#F79E1B"/><path d="M50 7.3a31 31 0 0 1 0 47.4a31 31 0 0 1 0-47.4z" fill="#FF5F00"/></svg>
+  </div>`;
+  return null;
+}
+
 function Cartao({ c, D, H, editar, saldoAnterior }) {
   const faturas = useMemo(() => C.faturasDoCartao(D, c, H), [D, c]);
   const atualId = C.faturaAtual(c, H);
@@ -71,12 +87,17 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
   return html`<div class="card" style="margin-bottom:16px${c.arquivado ? ';opacity:.6' : ''}">
     <div class="grade g-cc" style="align-items:start">
       <div class="pilha">
-        <div class="cc-visual" style=${`background:linear-gradient(135deg, ${c.cor}, ${c.cor}AA)`}>
+        ${MODELOS_CARTAO[c.modelo] ? html`<${ArteCartao} modelo=${c.modelo} />
+          <div class="cc-info"><div style="display:flex;align-items:center;gap:8px"><span class="nm" style="flex:1">${c.nome}</span>
+            <button class="btn fantasma ico peq" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
+            <div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class=${'num' + (lim.disponivel < 0 ? ' neg' : '')}>${brl(lim.disponivel)}</div>
+            <div class="lim">de ${brl(c.limite_centavos)} · ${titular ? 'Titular: ' + titular + ' · ' : ''}fecha dia ${c.dia_fechamento}, vence dia ${c.dia_vencimento}</div></div>`
+        : html`<div class="cc-visual" style=${`background:linear-gradient(135deg, ${c.cor}, ${c.cor}AA)`}>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">${ehLogo(c.icone) && html`<span class="cc-logo"><${Icone} n=${c.icone} /></span>`}<span class="nm" style="flex:1">${c.nome}</span>
             <button class="btn fantasma ico peq" style="color:#fff;position:relative;z-index:1" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
           <div><div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class="num">${brl(lim.disponivel)}</div>
             <div class="lim">de ${brl(c.limite_centavos)} · ${titular ? 'Titular: ' + titular + ' · ' : ''}fecha dia ${c.dia_fechamento}, vence dia ${c.dia_vencimento}</div></div>
-        </div>
+        </div>`}
         <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Limite comprometido</span><b class="num">${brl(lim.comprometido)}</b></div>
           <${Barra} pct=${pctLim} nivel=${pctLim >= 100 ? 'estourado' : pctLim >= 80 ? 'atencao' : ''} /></div>
         ${parcelados.length > 0 && html`<div><b style="font-size:14px">Parcelamentos em andamento</b>
@@ -288,6 +309,11 @@ function FormConta({ c, D, fechar }) {
       <div class="linha"><${Campo} rot="Instituição"><input class="inp" value=${x.instituicao || ''} onInput=${(e) => set({ instituicao: e.target.value })} /></${Campo}>
         <${Campo} rot="Saldo inicial" obrig dica="Pode ser negativo (ex.: −50,00)."><${CampoValor} valor=${x.saldo_inicial_centavos} onChange=${(v) => set({ saldo_inicial_centavos: v })} /></${Campo}>
         <${Campo} rot="Data de referência" obrig dica="Saldo no início deste dia."><input class="inp" type="date" value=${x.data_referencia} onInput=${(e) => set({ data_referencia: e.target.value })} /></${Campo}></div>
+      <${Campo} rot="Visual do cartão"><${Sel} valor=${x.modelo || ''} onChange=${(v) => set({ modelo: v || null })} vazio="Padrão (cor e ícone abaixo)"
+        opcoes=${Object.entries(MODELOS_CARTAO).map(([v, r]) => ({ v, r }))} /></${Campo}>
+      ${MODELOS_CARTAO[x.modelo] && html`<div style="max-width:340px"><${ArteCartao} modelo=${x.modelo} /></div>`}
+      <label class="chk" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" checked=${!!x.limite_so_principal} onChange=${(e) => set({ limite_so_principal: e.target.checked })} />
+        <span>O banco reserva no limite <b>só o valor principal</b> dos parcelamentos (os juros de cada parcela só ocupam o limite quando a fatura dela fecha). Ex.: Santander.</span></label>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
       <${Campo} rot="Ícone"><${SeletorIcone} logos valor=${x.icone} cor=${x.cor} onChange=${(v) => { setIconeManual(true); set({ icone: v }); }} onLogo=${(l) => set({ cor: l.cor })} /></${Campo}>
       ${erro && html`<div class="erro-msg">${erro}</div>`}

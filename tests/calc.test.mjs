@@ -159,3 +159,18 @@ t('gráficos e totais conferem para os mesmos filtros (cenário 8)', () => {
 });
 
 console.log(`\n${n} testes OK`);
+
+// limite só do principal (Santander): juros de parcelas em faturas não fechadas não ocupam limite
+{
+  const { limiteCartao } = await import('../js/lib/calc.js');
+  const cart = { id: 'cs', limite_centavos: 40000, dia_fechamento: 10, dia_vencimento: 16, limite_so_principal: true };
+  const L = (fatura, juros) => ({ id: fatura, tipo: 'despesa', cartao_id: 'cs', status: 'efetivado', valor_centavos: 5904, juros_centavos: juros, fatura });
+  const D = { lancamentos: [L('2026-12-01', 2000), L('2027-01-01', 1500)] };
+  const a = limiteCartao(D, cart, '2026-11-05');
+  if (a.comprometido !== 5904 * 2 - 3500) throw new Error('só principal falhou: ' + a.comprometido);
+  const b = limiteCartao(D, cart, '2026-12-11'); // fatura de dez já fechou: juros dela passam a contar
+  if (b.comprometido !== 5904 * 2 - 1500) throw new Error('fechamento falhou: ' + b.comprometido);
+  const c2 = limiteCartao(D, { ...cart, limite_so_principal: false }, '2026-11-05');
+  if (c2.comprometido !== 5904 * 2) throw new Error('padrão falhou');
+  console.log('ok limite só do principal');
+}
