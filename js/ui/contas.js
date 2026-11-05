@@ -54,7 +54,10 @@ export function Contas() {
 export const MODELOS_CARTAO = { 'nubank-roxo': 'Nubank Jesrrael (foto do cartão)', 'santander-elite': 'Santander Elite (grafite)' };
 
 /** Arte do cartão desenhada para parecer com o cartão físico. */
+export const temArte = (m) => !!m && (!!MODELOS_CARTAO[m] || m.startsWith('data:image/'));
+
 function ArteCartao({ modelo, nome }) {
+  if (modelo?.startsWith('data:image/')) return html`<img class="cc-arte cc-foto-livre" src=${modelo} alt=${'Cartão ' + (nome || '')} />`;
   if (modelo === 'nubank-roxo') return html`<img class="cc-arte cc-foto" src="img/cartoes/nubank-jesrrael.webp" alt="Cartão Nubank de Jesrrael F Santos" />`;
   if (modelo === 'santander-elite') return html`<div class="cc-arte cc-santander-elite" role="img" aria-label="Cartão Santander Elite">
     <div class="sa-marca"><img src="img/bancos/santander.png" alt="" /><span>Santander</span></div>
@@ -89,7 +92,7 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
   return html`<div class="card" style="margin-bottom:16px${c.arquivado ? ';opacity:.6' : ''}">
     <div class="grade g-cc" style="align-items:start">
       <div class="pilha">
-        ${MODELOS_CARTAO[c.modelo] ? html`<${ArteCartao} modelo=${c.modelo} nome=${c.nome_impresso || D.mapa.pessoas[c.titular_id]?.nome} />
+        ${temArte(c.modelo) ? html`<${ArteCartao} modelo=${c.modelo} nome=${c.nome_impresso || D.mapa.pessoas[c.titular_id]?.nome} />
           <div class="cc-info"><div style="display:flex;align-items:center;gap:8px"><span class="nm" style="flex:1">${c.nome}</span>
             <button class="btn fantasma ico peq" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
             <div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class=${'num' + (lim.disponivel < 0 ? ' neg' : '')}>${brl(lim.disponivel)}</div>
@@ -310,15 +313,51 @@ function FormConta({ c, D, fechar }) {
       <div class="linha"><${Campo} rot="Instituição"><input class="inp" value=${x.instituicao || ''} onInput=${(e) => set({ instituicao: e.target.value })} /></${Campo}>
         <${Campo} rot="Saldo inicial" obrig dica="Pode ser negativo (ex.: −50,00)."><${CampoValor} valor=${x.saldo_inicial_centavos} onChange=${(v) => set({ saldo_inicial_centavos: v })} /></${Campo}>
         <${Campo} rot="Data de referência" obrig dica="Saldo no início deste dia."><input class="inp" type="date" value=${x.data_referencia} onInput=${(e) => set({ data_referencia: e.target.value })} /></${Campo}></div>
-      <${Campo} rot="Visual do cartão"><${Sel} valor=${x.modelo || ''} onChange=${(v) => set({ modelo: v || null })} vazio="Padrão (cor e ícone abaixo)"
-        opcoes=${Object.entries(MODELOS_CARTAO).map(([v, r]) => ({ v, r }))} /></${Campo}>
-      ${MODELOS_CARTAO[x.modelo] && html`<div style="max-width:340px"><${ArteCartao} modelo=${x.modelo} nome=${D.mapa.pessoas[x.titular_id]?.nome} /></div>`}
-      <label class="chk" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" checked=${!!x.limite_so_principal} onChange=${(e) => set({ limite_so_principal: e.target.checked })} />
-        <span>O banco reserva no limite <b>só o valor principal</b> dos parcelamentos (os juros de cada parcela só ocupam o limite quando a fatura dela fecha). Ex.: Santander.</span></label>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
       <${Campo} rot="Ícone"><${SeletorIcone} logos valor=${x.icone} cor=${x.cor} onChange=${(v) => { setIconeManual(true); set({ icone: v }); }} onLogo=${(l) => set({ cor: l.cor })} /></${Campo}>
       ${erro && html`<div class="erro-msg">${erro}</div>`}
     </div></${Modal}>`;
+}
+
+/** Reduz a foto e devolve como data URL (webp), já cortada no formato de cartão se pedido. */
+async function prepararImagem(arquivo, girar = 0) {
+  const url = typeof arquivo === 'string' ? arquivo : URL.createObjectURL(arquivo);
+  const img = await new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = url; });
+  const rot = ((girar % 360) + 360) % 360, deitada = rot === 90 || rot === 270;
+  const w0 = deitada ? img.height : img.width, h0 = deitada ? img.width : img.height;
+  const esc = Math.min(1, 900 / Math.max(w0, h0));
+  const cv = document.createElement('canvas'); cv.width = Math.round(w0 * esc); cv.height = Math.round(h0 * esc);
+  const g = cv.getContext('2d'); g.translate(cv.width / 2, cv.height / 2); g.rotate((rot * Math.PI) / 180);
+  g.drawImage(img, (-img.width * esc) / 2, (-img.height * esc) / 2, img.width * esc, img.height * esc);
+  let dado = cv.toDataURL('image/webp', 0.85);
+  if (!dado.startsWith('data:image/webp')) dado = cv.toDataURL('image/jpeg', 0.85);
+  return dado;
+}
+
+function ImagemCartaoCampo({ x, set, nome }) {
+  const [ocup, setOcup] = useState(false); const [erro, setErro] = useState('');
+  const foto = x.modelo?.startsWith('data:image/');
+  async function enviar(e) {
+    const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
+    if (!f.type.startsWith('image/')) return setErro('Escolha um arquivo de imagem (foto do cartão).');
+    setOcup(true); setErro('');
+    try { set({ modelo: await prepararImagem(f) }); } catch { setErro('Não consegui ler essa imagem. Tente outra foto.'); } finally { setOcup(false); }
+  }
+  async function girar() { setOcup(true); try { set({ modelo: await prepararImagem(x.modelo, 90) }); } finally { setOcup(false); } }
+  return html`<div class="pilha" style="gap:8px">
+    ${temArte(x.modelo) ? html`<div style="max-width:340px"><${ArteCartao} modelo=${x.modelo} nome=${nome} /></div>`
+      : html`<small style="color:var(--txt3)">Sem imagem: o cartão aparece com a cor e o ícone escolhidos abaixo.</small>`}
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <label class="btn sec peq" style="cursor:pointer"><${Icone} n="camera" /> ${temArte(x.modelo) ? 'Trocar imagem' : 'Enviar foto do cartão'}
+        <input type="file" accept="image/*" style="display:none" onChange=${enviar} /></label>
+      ${foto && html`<button type="button" class="btn sec peq" disabled=${ocup} onClick=${girar}><${Icone} n="refresh-cw" /> Girar</button>`}
+      ${temArte(x.modelo) && html`<button type="button" class="btn fantasma peq" onClick=${() => set({ modelo: null })}><${Icone} n="x" /> Remover imagem</button>`}
+    </div>
+    <${Sel} valor=${MODELOS_CARTAO[x.modelo] ? x.modelo : ''} onChange=${(v) => set({ modelo: v || null })} vazio=${foto ? 'Foto enviada' : 'Ou escolha um modelo pronto…'}
+      opcoes=${Object.entries(MODELOS_CARTAO).map(([v, r]) => ({ v, r }))} />
+    ${ocup && html`<small>Preparando a imagem…</small>`}${erro && html`<div class="erro-msg">${erro}</div>`}
+    <small style="color:var(--txt3)">Dica: use uma foto do cartão deitado (horizontal), bem enquadrada. Se ficar em pé, toque em “Girar”.</small>
+  </div>`;
 }
 
 function FormCartao({ c, D, fechar, depois }) {
@@ -358,6 +397,9 @@ function FormCartao({ c, D, fechar, depois }) {
       ${!c.id && html`<label class="chk aviso-msg" style="display:flex"><input type="checkbox" checked=${emUso} onChange=${(e) => setEmUso(e.target.checked)} />
         <span>Este cartão <b>já está em uso</b> (tem fatura a pagar ou compras parceladas). Depois de salvar, vou pedir esses valores para o limite ficar certo.</span></label>`}
       <${Campo} rot="Conta usada para pagar a fatura"><${Sel} valor=${x.conta_pagamento_id} onChange=${(v) => set({ conta_pagamento_id: v })} vazio="—" opcoes=${opcoesContas(D)} /></${Campo}>
+      <${Campo} rot="Imagem do cartão"><${ImagemCartaoCampo} x=${x} set=${set} nome=${D.mapa.pessoas[x.titular_id]?.nome} /></${Campo}>
+      <label class="chk" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" checked=${!!x.limite_so_principal} onChange=${(e) => set({ limite_so_principal: e.target.checked })} />
+        <span>O banco reserva no limite <b>só o valor principal</b> dos parcelamentos (os juros de cada parcela só ocupam o limite quando a fatura dela fecha). Ex.: Santander.</span></label>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
       <${Campo} rot="Ícone"><${SeletorIcone} logos valor=${x.icone || 'credit-card'} cor=${x.cor} onChange=${(v) => { setIconeManual(true); set({ icone: v }); }} onLogo=${(l) => set({ cor: l.cor })} /></${Campo}>
       ${erro && html`<div class="erro-msg">${erro}</div>`}

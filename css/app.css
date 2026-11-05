@@ -411,3 +411,5 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 
 
 .cc-foto { display: block; width: 100%; height: auto; aspect-ratio: 1000 / 673; container-type: normal; object-fit: contain; background: none; box-shadow: 0 10px 28px rgba(60,20,120,.25); border-radius: 4.6%/6.8%; }
+
+.cc-foto-livre { display: block; width: 100%; aspect-ratio: 1.586; object-fit: cover; container-type: normal; border-radius: 4.6%/7.3%; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
