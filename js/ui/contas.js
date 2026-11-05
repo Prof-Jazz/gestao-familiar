@@ -51,18 +51,11 @@ export function Contas() {
   ${saldoIni && html`<${SaldoAnteriorCartao} c=${D.mapa.cartoes[saldoIni.id] || saldoIni} D=${D} fechar=${() => setSaldoIni(null)} />`}`;
 }
 
-export const MODELOS_CARTAO = { 'nubank-roxo': 'Nubank (roxo, vertical)', 'santander-elite': 'Santander Elite (grafite)' };
+export const MODELOS_CARTAO = { 'nubank-roxo': 'Nubank Jesrrael (foto do cartão)', 'santander-elite': 'Santander Elite (grafite)' };
 
 /** Arte do cartão desenhada para parecer com o cartão físico. */
 function ArteCartao({ modelo, nome }) {
-  const MC = html`<svg viewBox="0 0 100 62" aria-hidden="true"><circle cx="31" cy="31" r="31" fill="#EB001B"/><circle cx="69" cy="31" r="31" fill="#F79E1B"/><path d="M50 7.3a31 31 0 0 1 0 47.4a31 31 0 0 1 0-47.4z" fill="#FF5F00"/></svg>`;
-  const CHIP = html`<svg viewBox="0 0 46 60" aria-hidden="true"><rect x=".5" y=".5" width="45" height="59" rx="7" fill="#E9E3CF" stroke="#4A3B5C"/>
-    <path d="M15 .5v19M31 .5v19M.5 20h45M.5 40h45M15 40v19.5M31 40v19.5M15 20q-3 10 0 20M31 20q3 10 0 20" fill="none" stroke="#9C927A" stroke-width="1.3"/></svg>`;
-  if (modelo === 'nubank-roxo') return html`<div class="cc-arte vertical cc-nubank-roxo" role="img" aria-label="Cartão Nubank">
-    <span class="nu-mc">${MC}</span><span class="nu-chip">${CHIP}</span>
-    ${nome && html`<span class="nu-nome">${nome}</span>`}
-    <img class="nu-logo" src="img/bancos/nubank.png" alt="" />
-  </div>`;
+  if (modelo === 'nubank-roxo') return html`<img class="cc-arte cc-foto" src="img/cartoes/nubank-jesrrael.webp" alt="Cartão Nubank de Jesrrael F Santos" />`;
   if (modelo === 'santander-elite') return html`<div class="cc-arte cc-santander-elite" role="img" aria-label="Cartão Santander Elite">
     <div class="sa-marca"><img src="img/bancos/santander.png" alt="" /><span>Santander</span></div>
     <svg class="sa-chip" viewBox="0 0 60 46" aria-hidden="true"><defs><linearGradient id="chipG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F4F4"/><stop offset=".5" stop-color="#C9CACC"/><stop offset="1" stop-color="#ECECEC"/></linearGradient></defs>
