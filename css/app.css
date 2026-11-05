@@ -408,3 +408,11 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .cc-info .nm { font-weight: 800; font-size: 16px; }
 .cc-info .lim { font-size: 13px; color: var(--txt3); }
 .cc-info .neg { color: var(--neg); }
+
+.cc-arte.vertical { aspect-ratio: 1 / 1.586; max-width: 240px; width: 100%; margin: 0 auto; }
+.cc-nubank-roxo { background: linear-gradient(170deg, #9B4BE8 0%, #8A3FD9 35%, #7A35CC 70%, #6A2DBF 100%); }
+.cc-nubank-roxo::before { content: ''; position: absolute; inset: 0; background: radial-gradient(90% 60% at 85% 20%, rgba(255,255,255,.16), transparent 60%), radial-gradient(70% 50% at 10% 90%, rgba(40,0,80,.18), transparent 60%); }
+.nu-mc { position: absolute; left: 12.5%; top: 9%; width: 33%; }
+.nu-chip { position: absolute; left: 53%; top: 8.3%; width: 15%; }
+.nu-nome { position: absolute; left: 12%; top: 72.5%; color: #F3EEFF; font-size: 8cqw; font-weight: 500; letter-spacing: .02em; white-space: nowrap; }
+.nu-logo { position: absolute; left: 7%; bottom: 3.5%; width: 34%; filter: brightness(0) invert(1); }

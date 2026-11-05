@@ -51,10 +51,18 @@ export function Contas() {
   ${saldoIni && html`<${SaldoAnteriorCartao} c=${D.mapa.cartoes[saldoIni.id] || saldoIni} D=${D} fechar=${() => setSaldoIni(null)} />`}`;
 }
 
-export const MODELOS_CARTAO = { 'santander-elite': 'Santander Elite (grafite)' };
+export const MODELOS_CARTAO = { 'nubank-roxo': 'Nubank (roxo, vertical)', 'santander-elite': 'Santander Elite (grafite)' };
 
 /** Arte do cartão desenhada para parecer com o cartão físico. */
-function ArteCartao({ modelo }) {
+function ArteCartao({ modelo, nome }) {
+  const MC = html`<svg viewBox="0 0 100 62" aria-hidden="true"><circle cx="31" cy="31" r="31" fill="#EB001B"/><circle cx="69" cy="31" r="31" fill="#F79E1B"/><path d="M50 7.3a31 31 0 0 1 0 47.4a31 31 0 0 1 0-47.4z" fill="#FF5F00"/></svg>`;
+  const CHIP = html`<svg viewBox="0 0 46 60" aria-hidden="true"><rect x=".5" y=".5" width="45" height="59" rx="7" fill="#E9E3CF" stroke="#4A3B5C"/>
+    <path d="M15 .5v19M31 .5v19M.5 20h45M.5 40h45M15 40v19.5M31 40v19.5M15 20q-3 10 0 20M31 20q3 10 0 20" fill="none" stroke="#9C927A" stroke-width="1.3"/></svg>`;
+  if (modelo === 'nubank-roxo') return html`<div class="cc-arte vertical cc-nubank-roxo" role="img" aria-label="Cartão Nubank">
+    <span class="nu-mc">${MC}</span><span class="nu-chip">${CHIP}</span>
+    ${nome && html`<span class="nu-nome">${nome}</span>`}
+    <img class="nu-logo" src="img/bancos/nubank.png" alt="" />
+  </div>`;
   if (modelo === 'santander-elite') return html`<div class="cc-arte cc-santander-elite" role="img" aria-label="Cartão Santander Elite">
     <div class="sa-marca"><img src="img/bancos/santander.png" alt="" /><span>Santander</span></div>
     <svg class="sa-chip" viewBox="0 0 60 46" aria-hidden="true"><defs><linearGradient id="chipG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#F4F4F4"/><stop offset=".5" stop-color="#C9CACC"/><stop offset="1" stop-color="#ECECEC"/></linearGradient></defs>
@@ -87,7 +95,7 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
   return html`<div class="card" style="margin-bottom:16px${c.arquivado ? ';opacity:.6' : ''}">
     <div class="grade g-cc" style="align-items:start">
       <div class="pilha">
-        ${MODELOS_CARTAO[c.modelo] ? html`<${ArteCartao} modelo=${c.modelo} />
+        ${MODELOS_CARTAO[c.modelo] ? html`<${ArteCartao} modelo=${c.modelo} nome=${c.nome_impresso || D.mapa.pessoas[c.titular_id]?.nome} />
           <div class="cc-info"><div style="display:flex;align-items:center;gap:8px"><span class="nm" style="flex:1">${c.nome}</span>
             <button class="btn fantasma ico peq" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
             <div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class=${'num' + (lim.disponivel < 0 ? ' neg' : '')}>${brl(lim.disponivel)}</div>
@@ -311,7 +319,7 @@ function FormConta({ c, D, fechar }) {
         <${Campo} rot="Data de referência" obrig dica="Saldo no início deste dia."><input class="inp" type="date" value=${x.data_referencia} onInput=${(e) => set({ data_referencia: e.target.value })} /></${Campo}></div>
       <${Campo} rot="Visual do cartão"><${Sel} valor=${x.modelo || ''} onChange=${(v) => set({ modelo: v || null })} vazio="Padrão (cor e ícone abaixo)"
         opcoes=${Object.entries(MODELOS_CARTAO).map(([v, r]) => ({ v, r }))} /></${Campo}>
-      ${MODELOS_CARTAO[x.modelo] && html`<div style="max-width:340px"><${ArteCartao} modelo=${x.modelo} /></div>`}
+      ${MODELOS_CARTAO[x.modelo] && html`<div style="max-width:340px"><${ArteCartao} modelo=${x.modelo} nome=${D.mapa.pessoas[x.titular_id]?.nome} /></div>`}
       <label class="chk" style="display:flex;gap:8px;align-items:flex-start"><input type="checkbox" checked=${!!x.limite_so_principal} onChange=${(e) => set({ limite_so_principal: e.target.checked })} />
         <span>O banco reserva no limite <b>só o valor principal</b> dos parcelamentos (os juros de cada parcela só ocupam o limite quando a fatura dela fecha). Ex.: Santander.</span></label>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
