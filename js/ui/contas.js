@@ -72,11 +72,11 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
   const faturas = useMemo(() => C.faturasDoCartao(D, c, H), [D, c]);
   const atualId = C.faturaAtual(c, H);
   const [selEscolhida, setSelF] = useState(null);
-  const selF = selEscolhida || (faturas.find((f) => f.status === 'vencida' || f.status === 'fechada')?.fatura) || atualId;
+  const selF = selEscolhida || (faturas.find((f) => f.status === 'vencida' || f.status === 'fechada')?.fatura)
+    || (faturas.find((f) => f.fatura >= atualId && f.aberto + f.previstas > 0)?.fatura) || atualId;
   const [pagar, setPagar] = useState(null);
   const f = faturas.find((x) => x.fatura === selF) || faturas[0];
   const lim = C.limiteCartao(D, c);
-  const proxPagar = faturas.find((x) => x.aberto + x.previstas > 0 && x.status !== 'paga');
   const parcelados = useMemo(() => {
     const ids = [...new Set(C.vivos(D).filter((l) => l.cartao_id === c.id && l.compra_id).map((l) => l.compra_id))];
     return ids.map((id) => ({ id, ...C.restanteCompra(D, id, H) })).filter((x) => x.restante > 0);
@@ -84,9 +84,6 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
   const titular = D.mapa.pessoas[c.titular_id]?.nome;
   const catJuros = D.categorias.find((x) => x.nome === 'Tributos e serviços financeiros' && !x.parent_id);
   const subJuros = D.categorias.find((x) => x.parent_id === catJuros?.id && /encargos|juros/i.test(x.nome));
-  const BotaoPagarCartao = proxPagar ? html`<button class="btn verde" style="width:100%;margin-top:10px;justify-content:center" onClick=${() => setPagar(proxPagar)}>
-      <${Icone} n="check" /> Pagar fatura</button>`
-    : html`<div class="lim" style="margin-top:8px">Nenhuma fatura a pagar no momento.</div>`;
   const pctLim = c.limite_centavos ? (lim.comprometido / c.limite_centavos) * 100 : 0;
 
   return html`<div class="card" style="margin-bottom:16px${c.arquivado ? ';opacity:.6' : ''}">
@@ -96,14 +93,13 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
           <div class="cc-info"><div style="display:flex;align-items:center;gap:8px"><span class="nm" style="flex:1">${c.nome}</span>
             <button class="btn fantasma ico peq" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
             <div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class=${'num' + (lim.disponivel < 0 ? ' neg' : '')}>${brl(lim.disponivel)}</div>
-            <div class="lim">de ${brl(c.limite_centavos)} · ${titular ? 'Titular: ' + titular + ' · ' : ''}fecha dia ${c.dia_fechamento}, vence dia ${c.dia_vencimento}</div>
-            ${BotaoPagarCartao}</div>`
+            <div class="lim">de ${brl(c.limite_centavos)} · ${titular ? 'Titular: ' + titular + ' · ' : ''}fecha dia ${c.dia_fechamento}, vence dia ${c.dia_vencimento}</div></div>`
         : html`<div class="cc-visual" style=${`background:linear-gradient(135deg, ${c.cor}, ${c.cor}AA)`}>
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">${ehLogo(c.icone) && html`<span class="cc-logo"><${Icone} n=${c.icone} /></span>`}<span class="nm" style="flex:1">${c.nome}</span>
             <button class="btn fantasma ico peq" style="color:#fff;position:relative;z-index:1" onClick=${editar} aria-label="Editar cartão"><${Icone} n="pencil" /></button></div>
           <div><div class="lim">Limite disponível</div><div style="font-size:24px;font-weight:800" class="num">${brl(lim.disponivel)}</div>
             <div class="lim">de ${brl(c.limite_centavos)} · ${titular ? 'Titular: ' + titular + ' · ' : ''}fecha dia ${c.dia_fechamento}, vence dia ${c.dia_vencimento}</div></div>
-        </div>${BotaoPagarCartao}`}
+        </div>`}
         <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px"><span>Limite comprometido</span><b class="num">${brl(lim.comprometido)}</b></div>
           <${Barra} pct=${pctLim} nivel=${pctLim >= 100 ? 'estourado' : pctLim >= 80 ? 'atencao' : ''} /></div>
         ${parcelados.length > 0 && html`<div><b style="font-size:14px">Parcelamentos em andamento</b>
