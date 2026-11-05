@@ -414,6 +414,6 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 
 .cc-foto-livre { display: block; width: 100%; aspect-ratio: 1.586; object-fit: cover; container-type: normal; border-radius: 4.6%/7.3%; box-shadow: 0 10px 28px rgba(0,0,0,.22); }
 
-.ev-tipo button.on.gastos { background: #E11D48; border-color: #E11D48; color: #fff; }
-.ev-tipo button.on.receitas { background: #16A34A; border-color: #16A34A; color: #fff; }
+.btn-grupo.ev-tipo button.on.gastos { background: #E11D48; border-color: #E11D48; color: #fff; }
+.btn-grupo.ev-tipo button.on.receitas { background: #16A34A; border-color: #16A34A; color: #fff; }
 .ev-total { margin-top: 8px; font-size: 13.5px; color: var(--txt2, #545B7A); text-align: right; }

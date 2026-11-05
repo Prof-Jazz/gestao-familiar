@@ -119,9 +119,6 @@ export function Analises() {
         <button class=${tipoEv === 'receitas' ? 'on receitas' : ''} onClick=${() => { setTipoEv('receitas'); setCats([]); }}><${Icone} n="arrow-up" /> Receitas</button></div>
       <div class="btn-grupo">${[['dia', 'Por dia'], ['semana', 'Por semana'], ['mes', 'Por mês']].map(([v, t]) => html`<button class=${gran === v ? 'on' : ''} onClick=${() => setGran(v)}>${t}</button>`)}</div>
     </div>
-    ${tipoEv === 'gastos' && html`<div style="font-size:12.5px;color:var(--txt3);margin-bottom:6px">Para ver uma categoria em detalhe, toque nela:</div>
-    <div class="chips" style="margin-bottom:10px">${catsDesp.map((c) => html`<button class=${'chip' + (cats.includes(c.id) ? ' on' : '')} style=${cats.includes(c.id) ? `background:${c.cor};border-color:${c.cor}` : ''}
-      onClick=${() => setCats(cats.includes(c.id) ? cats.filter((x) => x !== c.id) : [...cats, c.id])}><${Icone} n=${c.icone} />${c.nome}</button>`)}</div>`}
     <${Grafico} chave=${'ev' + tipoEv + chave} altura=${300} rotulo=${tipoEv === 'gastos' ? 'Evolução dos gastos' : 'Evolução das receitas'} cfg=${{ type: 'bar',
       data: { labels: r.serie.chaves.map(rotSerie), datasets:
         tipoEv === 'receitas' ? [{ label: 'Receitas', data: r.serieRec.vals.map((v) => v / 100), backgroundColor: '#16A34A', borderRadius: 6, maxBarThickness: 46 }]
@@ -129,6 +126,9 @@ export function Analises() {
         : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), backgroundColor: '#E11D48', borderRadius: 6, maxBarThickness: 46 }] },
       options: optsEixo({ plugins: { legend: { display: cats.length > 1 }, tooltip: { callbacks: { label: tip } } } }) }} />
     <div class="ev-total">Total ${tipoEv === 'gastos' ? 'gasto' : 'recebido'} no período: <b class="num">${brl(tipoEv === 'gastos' ? r.tot.despesas : r.tot.receitas)}</b></div>
+    ${tipoEv === 'gastos' && html`<div style="font-size:12.5px;color:var(--txt3);margin:12px 0 6px">Ver só uma categoria (toque para escolher):</div>
+    <div class="chips" style="margin-bottom:10px">${catsDesp.map((c) => html`<button class=${'chip' + (cats.includes(c.id) ? ' on' : '')} style=${cats.includes(c.id) ? `background:${c.cor};border-color:${c.cor}` : ''}
+      onClick=${() => setCats(cats.includes(c.id) ? cats.filter((x) => x !== c.id) : [...cats, c.id])}><${Icone} n=${c.icone} />${c.nome}</button>`)}</div>`}
     ${tipoEv === 'gastos' && (cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
     ${tipoEv === 'receitas' && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
   </div>
