@@ -417,3 +417,35 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .btn-grupo.ev-tipo button.on.gastos { background: #E11D48; border-color: #E11D48; color: #fff; }
 .btn-grupo.ev-tipo button.on.receitas { background: #16A34A; border-color: #16A34A; color: #fff; }
 .ev-total { margin-top: 8px; font-size: 13.5px; color: var(--txt2, #545B7A); text-align: right; }
+
+/* ---------- relatório de análise (PDF) ---------- */
+.export-grupo { display: flex; gap: 8px; flex-wrap: wrap; }
+.relatorio-pdf { font-size: 11.5px; color: #1B1F3B; }
+.rp-cab { display: flex; justify-content: space-between; gap: 16px; border-bottom: 3px solid #5B4FE9; padding-bottom: 10px; margin-bottom: 14px; }
+.rp-marca { font-weight: 800; font-size: 16px; color: #5B4FE9; letter-spacing: .02em; }
+.rp-sub { color: #6B7280; font-size: 11px; }
+.rp-meta { text-align: right; font-size: 10.5px; color: #374151; }
+.rp-sec { margin-bottom: 16px; }
+.rp-sec h2 { font-size: 14px; margin: 0 0 8px; padding: 4px 8px; background: #EEF0FF; border-left: 4px solid #5B4FE9; break-after: avoid; }
+.rp-sec h3 { font-size: 12px; margin: 10px 0 4px; break-after: avoid; }
+.rp-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rp-kpis > div { border: 1px solid #E5E7EB; border-radius: 8px; padding: 8px; display: flex; flex-direction: column; gap: 2px; }
+.rp-kpis small { color: #6B7280; } .rp-kpis b { font-size: 15px; } .rp-kpis span { color: #6B7280; font-size: 10px; }
+.rp-tab { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+.rp-tab th, .rp-tab td { border-bottom: 1px solid #E5E7EB; padding: 4px 6px; text-align: left; vertical-align: top; }
+.rp-tab th { background: #F7F7FB; font-size: 10.5px; color: #374151; }
+.rp-tab .r { text-align: right; white-space: nowrap; }
+.rp-tab tfoot td { font-weight: 800; border-top: 2px solid #CBD5E1; }
+.rp-tab tr { break-inside: avoid; }
+.rp-exp { color: #4B5563; font-size: 10.5px; }
+.rp-barra { display: block; height: 7px; background: #F1F2F7; border-radius: 4px; overflow: hidden; margin: 2px 0; }
+.rp-barra i { display: block; height: 100%; border-radius: 4px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp-selo { color: #fff; border-radius: 99px; padding: 2px 8px; font-size: 10px; font-weight: 700; white-space: nowrap; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.rp-nota { display: flex; gap: 14px; align-items: center; margin-bottom: 8px; }
+.rp-nota p { margin: 2px 0 0; color: #4B5563; font-size: 10.5px; }
+.rp-nota-num { width: 70px; height: 70px; border-radius: 50%; border: 6px solid; display: grid; place-items: center; font-size: 22px; font-weight: 800; flex: none; line-height: 1; text-align: center; }
+.rp-nota-num small { display: block; font-size: 9px; color: #6B7280; font-weight: 600; }
+.rp-pontos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+.rp-pontos ul { margin: 0; padding-left: 16px; } .rp-pontos li { margin-bottom: 3px; } .rp-pontos h3 { margin-top: 0; }
+.rp-rodape { margin-top: 14px; border-top: 1px solid #E5E7EB; padding-top: 6px; color: #6B7280; font-size: 9.5px; }
+@media print { .relatorio-pdf * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }

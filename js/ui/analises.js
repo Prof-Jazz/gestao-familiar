@@ -1,6 +1,8 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, Base, Vazio, Sel, Campo, Grafico, Modal, opcoesContas, opcoesPessoas, opcoesCategorias } from './comp.js';
-import { useStore } from '../data/store.js';
+import { useStore, toast } from '../data/store.js';
+import { RelatorioAnalise } from './relatorio-analise.js';
+import { exportarCSV, exportarXLSX } from '../lib/exportar.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
 import { brl, pct, primeiroDia, ultimoDia, addMesYM, mesCurto, dataBR, difDias, addDias, variacao, hoje, nomeMesCap } from '../lib/fmt.js';
@@ -32,7 +34,8 @@ export function periodoAnterior({ ini, fim }) {
 }
 
 export function Analises() {
-  const { D, mes } = useStore();
+  const { D, mes, perfil } = useStore();
+  const [imprimindo, setImprimindo] = useState(false);
   const base = 'consumo'; // gastos no mês em que aconteceram (cartão conta na data da compra)
   const [preset, setPreset] = useState('6m');
   const [livre, setLivre] = useState({ ini: primeiroDia(mes), fim: ultimoDia(mes) });
@@ -80,8 +83,32 @@ export function Analises() {
   const subs = f.categoria_id ? D.categorias.filter((c) => c.parent_id === f.categoria_id).map((c) => ({ v: c.id, r: c.nome })) : [];
   const catsDesp = D.categorias.filter((c) => c.tipo === 'despesa' && !c.parent_id);
 
-  return html`
-  <div class="topo"><div><h2>Análises</h2><div class="sub">${P.rot}</div></div><span class="esp"></span></div>
+  useEffect(() => {
+    if (!imprimindo) return;
+    const fim = () => setImprimindo(false);
+    window.addEventListener('afterprint', fim, { once: true });
+    const t = setTimeout(() => window.print(), 300);
+    return () => { clearTimeout(t); window.removeEventListener('afterprint', fim); };
+  }, [imprimindo]);
+  const lancsPeriodo = () => [...new Map(r.itens.map((it) => [it.l.id, it.l])).values()].sort((a, b) => a.data_ocorrencia.localeCompare(b.data_ocorrencia));
+  const nomeArq = `analise-${P.ini}-a-${P.fim}`;
+  const filtrosTxt = Object.entries(f).map(([k, v]) => (k.endsWith('categoria_id') ? D.mapa.categorias[v]?.nome : k === 'conta_id' ? D.mapa.contas[v]?.nome : k === 'cartao_id' ? D.mapa.cartoes[v]?.nome : k === 'projeto_id' ? D.projetos.find((p) => p.id === v)?.nome : D.mapa.pessoas[v]?.nome || D.mapa.perfis[v]?.nome)).filter(Boolean).join(', ');
+  function excelAnalise() {
+    const ok = exportarXLSX(D, lancsPeriodo(), nomeArq + '.xlsx', [
+      { nome: 'Resumo', linhas: [{ Indicador: 'Receitas', Valor: r.tot.receitas / 100 }, { Indicador: 'Gastos', Valor: r.tot.despesas / 100 }, { Indicador: 'Sobrou', Valor: r.tot.resultado / 100 }] },
+      { nome: 'Mês a mês', linhas: r.meses.map((ym, i) => ({ Mês: mesCurto(ym), Receitas: r.rxd[i].receitas / 100, Gastos: r.rxd[i].despesas / 100, Sobrou: r.rxd[i].resultado / 100 })) },
+      { nome: 'Gastos por categoria', linhas: C.rankingValor(r.porCat.grupos).map((g, i) => ({ Posição: i + 1, Categoria: g.rotulo, Valor: g.valor / 100, Vezes: g.qtd, 'Participação %': +g.pct.toFixed(2) })) },
+      { nome: 'Receitas por categoria', linhas: C.rankingValor(r.porCatRec.grupos).map((g, i) => ({ Posição: i + 1, Categoria: g.rotulo, Valor: g.valor / 100, Vezes: g.qtd, 'Participação %': +g.pct.toFixed(2) })) },
+    ]);
+    if (!ok) toast('Não há lançamentos no período para exportar.', 'erro');
+  }
+
+  return html`<div class="nao-imprimir">
+  <div class="topo"><div><h2>Análises</h2><div class="sub">${P.rot}</div></div><span class="esp"></span>
+    <div class="export-grupo">
+      <button class="btn" onClick=${() => setImprimindo(true)} title="Relatório completo com avaliação da saúde financeira"><${Icone} n="printer" /> Relatório PDF</button>
+      <button class="btn sec" onClick=${() => exportarCSV(D, lancsPeriodo(), nomeArq + '.csv') || toast('Nada para exportar.', 'erro')}><${Icone} n="download" /> CSV</button>
+      <button class="btn sec" onClick=${excelAnalise}><${Icone} n="file-spreadsheet" /> Excel</button></div></div>
 
   <div class="card" style="margin-bottom:16px">
     <div class="filtros">
@@ -180,7 +207,8 @@ export function Analises() {
   ${fatia && html`<${Modal} titulo=${fatia.rotulo} onClose=${() => setFatia(null)} larg="larga">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px"><span class="pilula pri">${brl(fatia.valor)}</span><span class="pilula zero">${fatia.qtd} lançamento(s)</span><span class="pilula zero">${pct(fatia.pct)} do total</span></div>
     <div class="lista">${fatia.itens.slice().sort((a, b) => b.data.localeCompare(a.data)).map((it) => html`<${ItemLanc} l=${it.l} D=${D} />`)}</div>
-  </${Modal}>`}`;
+  </${Modal}>`}</div>
+  ${imprimindo && html`<${RelatorioAnalise} D=${D} P=${P} f=${f} mes=${mes} hoje=${H} perfil=${perfil} filtrosTxt=${filtrosTxt} />`}`;
 }
 
 function Distribuicao({ titulo, icone, ag, chave, base, abrir, vazio, receita }) {
