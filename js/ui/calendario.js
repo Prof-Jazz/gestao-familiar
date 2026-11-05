@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { html, Icone, SeletorMes, Vazio } from './comp.js';
-import { useStore } from '../data/store.js';
+import { useStore, abrirPagarFatura } from '../data/store.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
 import { brl, hoje, primeiroDia, ultimoDia, addDias, dataBR, diaSemana } from '../lib/fmt.js';
@@ -58,9 +58,9 @@ export function Calendario() {
     </div>
     <div class="card"><h3><${Icone} n="calendar-days" /> ${sel ? dataBR(sel) : 'Pendências do mês'}${sel && html`<button class="acao btn fantasma peq" onClick=${() => setSel(null)}>Ver mês</button>`}</h3>
       ${lista.length === 0 ? html`<${Vazio} icone="circle-check" titulo=${sel ? 'Nada neste dia' : 'Nenhuma pendência no mês'} />`
-        : html`<div class="lista">${lista.map((e) => e.l ? html`<${ItemLanc} l=${e.l} D=${D} compacto />` : html`<a class="item click" href="#/contas" style="text-decoration:none;color:inherit">
+        : html`<div class="lista">${lista.map((e) => e.l ? html`<${ItemLanc} l=${e.l} D=${D} compacto />` : html`<a class="item click" href="#/calendario" style="text-decoration:none;color:inherit" onClick=${(ev) => { ev.preventDefault(); if (e.tipo !== 'pago') abrirPagarFatura({ cartaoId: e.fatura.cartao.id, fatura: e.fatura.fatura }); }}>
           <span class="cb" style="background:#EDE9FE;color:#5B21B6"><${Icone} n="credit-card" /></span><div class="meio"><div class="t1">${e.rot}</div><div class="t2">Vence ${dataBR(e.fatura.vencimento)} · fecha ${dataBR(e.fatura.fechamento)}</div></div>
-          <div class="dir"><b class="num">${brl(e.valor)}</b><br /><span class=${'pilula ' + (e.tipo === 'atrasado' ? 'neg' : e.tipo === 'pago' ? 'zero' : 'pri')}>${e.tipo === 'atrasado' ? '⚠ Vencida' : e.tipo === 'pago' ? '✓ Paga' : 'Pagar na tela de cartões'}</span></div></a>`)}</div>`}
+          <div class="dir"><b class="num">${brl(e.valor)}</b><br /><span class=${'pilula ' + (e.tipo === 'atrasado' ? 'neg' : e.tipo === 'pago' ? 'zero' : 'pri')}>${e.tipo === 'atrasado' ? '⚠ Vencida' : e.tipo === 'pago' ? '✓ Paga' : 'A pagar · Pagar'}</span></div></a>`)}</div>`}
     </div>
   </div>`;
 }

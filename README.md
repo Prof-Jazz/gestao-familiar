@@ -93,7 +93,13 @@ Em **Análises → Evolução dos gastos**, ao tocar numa categoria (ex.: *Alime
 
 Ao lançar uma despesa, use **“Paguei com mais de uma forma”** (abaixo de *Pago com*) para dividir o valor em 2 a 4 formas — ex.: R$ 100 em dinheiro na Carteira + o restante no crédito. O botão **Restante** completa o que falta, e o formulário só grava quando as partes somam exatamente o total. Cada parte é registrada na sua conta ou cartão (o saldo da conta cai só a parte dela; a parte do cartão vai para a fatura certa), e as partes ficam ligadas: na lista aparece o selo *dividido · total*, nos rankings a despesa conta uma vez só, e ao editar ou excluir dá para aplicar a todas as partes. Parcelamento e recorrência não se combinam com pagamento dividido.
 
-## 11. Estrutura do código
+## 11. Pagamento da fatura do cartão
+
+O pagamento da fatura **não é uma despesa nova** — as compras feitas no cartão já foram registradas como despesas, cada uma na sua categoria. Ele é um lançamento do tipo *Pagamento de fatura*, que tira o dinheiro da conta e quita o cartão. Por isso ele não aparece no filtro “Despesas” nem nos gráficos por categoria, mas entra no **fluxo de caixa** (“Despesas pagas” do painel) e no saldo da conta.
+
+Onde pagar: **Novo lançamento → “Pagar fatura de cartão de crédito”**; ou tocando na fatura em *Próximos vencimentos* (painel) ou no *Calendário*; ou em *Contas e cartões → cartão → Pagar fatura*. Para ver os pagamentos já feitos: *Lançamentos → Filtros → Tipo → Pagamentos de fatura*.
+
+## 12. Estrutura do código
 
 ```
 supabase/schema.sql        banco: tabelas, RLS, triggers de autoria/histórico, categorias iniciais

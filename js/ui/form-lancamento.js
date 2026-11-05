@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Modal, CampoValor, Autoria, Sel, Campo, opcoesContas, opcoesPessoas, opcoesProjetos } from './comp.js';
+import { abrirPagarFatura } from '../data/store.js';
 import { store, useStore, fecharForm, criarLancamento, criarDividido, partesDaDivisao, editarLancamento, atualizar, paraLixeira, toast, escolher, confirmar,
   enviarAnexos, urlAnexo, removerAnexoArquivo, historicoDe, nomeUsuario, abrirForm, encerrarRecorrencia } from '../data/store.js';
 import { hoje, dataBR, dataHoraBR, brl, primeiroDia, ymDe, uuid, nomeMesCap, addMesYM } from '../lib/fmt.js';
@@ -232,6 +233,8 @@ function Formulario({ cfg, D, perfil }) {
         ${['despesa', 'receita', 'transferencia'].map((t) => html`<button type="button" role="tab" aria-selected=${tipo === t} class=${(tipo === t ? 'on ' : '') + t} onClick=${() => trocarTipo(t)}>
           <${Icone} n=${t === 'despesa' ? 'arrow-up-right' : t === 'receita' ? 'arrow-down-left' : 'arrow-left-right'} />${NOME_TIPO[t]}</button>`)}
       </div>`}
+      ${!editando && tipo !== 'reembolso' && D.cartoes.some((c) => !c.arquivado) && html`<button type="button" class="btn-link" style="margin-top:-6px" onClick=${() => abrirPagarFatura({})}>
+        <${Icone} n="credit-card" /> Pagar fatura de cartão de crédito</button>`}
       ${tipo === 'reembolso' && f.origem_id && html`<div class="info-msg">Vinculado a “${D.mapa.lancamentos[f.origem_id]?.descricao}” (${brl(D.mapa.lancamentos[f.origem_id]?.valor_centavos)}). O reembolso reduz a despesa da categoria — não conta como receita.</div>`}
       ${tipo === 'pagamento_fatura' && html`<div class="info-msg">Pagamento da fatura de ${nomeMesCap(f.fatura?.slice(0, 7) || '2000-01')} do cartão ${D.mapa.cartoes[f.cartao_id]?.nome}. Reduz o saldo da conta e quita a fatura — não é uma nova despesa.</div>`}
 

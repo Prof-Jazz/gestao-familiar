@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, Vazio, Modal, Campo, Sel, CampoValor, SeletorCor, SeletorIcone, Barra, opcoesContas, opcoesPessoas, sugerirLogoDe, chaveLogo, ehLogo } from './comp.js';
-import { useStore, salvar, apagar, toast, confirmar, abrirForm, inserir, store } from '../data/store.js';
+import { useStore, salvar, apagar, toast, confirmar, abrirForm, inserir, store, abrirPagarFatura, fecharPagarFatura } from '../data/store.js';
 import * as C from '../lib/calc.js';
 import { brl, hoje, dataBR, nomeMesCap, uuid } from '../lib/fmt.js';
 import { ItemLanc } from './item.js';
@@ -108,7 +108,35 @@ function Cartao({ c, D, H, editar }) {
 }
 const Mini = ({ r, v }) => html`<div style="background:var(--bg);border-radius:12px;padding:8px 10px"><div style="font-size:11.5px;color:var(--txt3);font-weight:700">${r}</div><div class="num" style="font-weight:700">${v}</div></div>`;
 
-function PagarFatura({ f, c, D, fechar }) {
+/** Pagamento de fatura acessível de qualquer tela (Novo lançamento, painel, calendário). */
+export function PagarFaturaGlobal() {
+  const { pagFat, D } = useStore();
+  const H = hoje();
+  const cartoes = D.cartoes.filter((c) => !c.arquivado);
+  const [cartaoId, setCartaoId] = useState(null);
+  const [fatura, setFatura] = useState(null);
+  if (!pagFat) return null;
+  const cid = cartaoId || pagFat.cartaoId || (cartoes.length === 1 ? cartoes[0].id : null);
+  const c = cid ? D.mapa.cartoes[cid] : null;
+  const fechar = () => { setCartaoId(null); setFatura(null); fecharPagarFatura(); };
+  const abertas = c ? C.faturasDoCartao(D, c, H).filter((x) => x.aberto > 0) : [];
+  const fid = fatura || pagFat.fatura || (abertas.find((x) => x.status !== 'aberta') || abertas[0])?.fatura;
+  const f = c && fid ? C.resumoFatura(D, c, fid, H) : null;
+  if (!cartoes.length) return html`<${Modal} titulo="Pagar fatura de cartão" larg="estreita" onClose=${fechar}><${Vazio} icone="credit-card" titulo="Nenhum cartão cadastrado" texto="Cadastre o cartão em Contas e cartões." /></${Modal}>`;
+  if (!c || !f) return html`<${Modal} titulo="Pagar fatura de cartão" larg="estreita" onClose=${fechar}>
+    <div class="pilha">
+      <div class="campo"><span>Qual cartão?</span><div class="chips">${cartoes.map((k) => html`<button type="button" class=${'chip' + (k.id === cid ? ' on' : '')} style=${k.id === cid ? `background:${k.cor};border-color:${k.cor}` : ''}
+        onClick=${() => { setCartaoId(k.id); setFatura(null); }}><${Icone} n=${k.icone || 'credit-card'} />${k.nome}</button>`)}</div></div>
+      ${c && !abertas.length && html`<div class="info-msg">✓ Nenhuma fatura com valor em aberto neste cartão.</div>`}
+    </div></${Modal}>`;
+  return html`<${PagarFatura} key=${c.id + f.fatura} f=${f} c=${c} D=${D} fechar=${fechar}
+    trocar=${html`<div class="linha">
+      ${cartoes.length > 1 && html`<${Campo} rot="Cartão"><${Sel} valor=${c.id} onChange=${(v) => { setCartaoId(v); setFatura(null); }} opcoes=${cartoes.map((k) => ({ v: k.id, r: k.nome }))} /></${Campo}>`}
+      <${Campo} rot="Fatura"><${Sel} valor=${f.fatura} onChange=${setFatura} opcoes=${(abertas.some((x) => x.fatura === f.fatura) ? abertas : [f, ...abertas]).map((x) => ({ v: x.fatura, r: `${nomeMesCap(x.fatura.slice(0, 7))} · vence ${dataBR(x.vencimento)} · ${brl(Math.max(0, x.aberto))}` }))} /></${Campo}>
+    </div>`} />`;
+}
+
+function PagarFatura({ f, c, D, fechar, trocar }) {
   const devido = Math.max(0, f.aberto) + (f.status === 'aberta' ? 0 : 0);
   const [valor, setValor] = useState(devido || f.previstas);
   const [conta, setConta] = useState(c.conta_pagamento_id || D.contas.find((x) => !x.arquivada)?.id);
@@ -131,6 +159,7 @@ function PagarFatura({ f, c, D, fechar }) {
   return html`<${Modal} titulo=${'Pagar fatura de ' + nomeMesCap(f.fatura.slice(0, 7))} larg="estreita" onClose=${fechar}
     rodape=${html`<button class="btn sec" onClick=${fechar}>Cancelar</button><button class="btn verde" disabled=${ocupado} onClick=${ok}><${Icone} n="check" /> Confirmar pagamento</button>`}>
     <div class="pilha">
+      ${trocar}
       <div class="info-msg">Em aberto: <b>${brl(devido)}</b>. O pagamento reduz o saldo da conta e quita a obrigação do cartão. <b>Não</b> é uma nova despesa — as compras já foram contadas nas suas categorias.</div>
       <${Campo} rot="Valor pago" obrig><${CampoValor} valor=${valor} onChange=${setValor} autoFocus /></${Campo}>
       <div class="chips"><button class="chip" type="button" onClick=${() => setValor(devido)}>Total (${brl(devido)})</button></div>

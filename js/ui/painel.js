@@ -1,6 +1,6 @@
 import { useMemo } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, Base, SeletorMes, Vazio, Barra, Grafico } from './comp.js';
-import { useStore, abrirForm } from '../data/store.js';
+import { useStore, abrirForm, abrirPagarFatura } from '../data/store.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
 import { brl, hoje, primeiroDia, ultimoDia, dataBR, nomeMes, difDias, pct, addDias } from '../lib/fmt.js';
@@ -89,9 +89,9 @@ function Kpi({ rot, ic, cor, v, det, extra, href }) {
 
 function ItemFatura({ f }) {
   const venc = f.vencimento < hoje();
-  return html`<a class="item click" href="#/contas" style="text-decoration:none;color:inherit"><span class="cb" style="background:#EDE9FE;color:#5B21B6"><${Icone} n="credit-card" /></span>
+  return html`<div class="item click" role="button" tabIndex="0" onClick=${() => abrirPagarFatura({ cartaoId: f.cartao.id, fatura: f.fatura })}><${CatIcone} cor="#5B21B6" icone=${f.cartao.icone || 'credit-card'} />
     <div class="meio"><div class="t1">Fatura ${f.cartao.nome}</div><div class="t2">Vence ${dataBR(f.vencimento)} · ${f.status === 'aberta' ? 'aberta' : 'fechada'}</div></div>
-    <div class="dir"><div class="num" style="font-weight:800">−${brl(f.devido)}</div><span class=${'pilula ' + (venc ? 'neg' : 'atn')}>${venc ? '⚠ Vencida' : 'A pagar'}</span></div></a>`;
+    <div class="dir"><div class="num" style="font-weight:800">−${brl(f.devido)}</div><span class=${'pilula ' + (venc ? 'neg' : 'atn')}>${venc ? '⚠ Vencida · Pagar' : 'A pagar · Pagar'}</span></div></div>`;
 }
 
 export function calcular(D, mes, H) {

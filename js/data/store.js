@@ -305,5 +305,8 @@ export const historicoRecente = (n) => B().historicoRecente(n);
 export const restaurarBackup = (d) => B().restaurarBackup(d);
 export const abrirForm = (cfg) => store.set({ form: cfg });
 export const fecharForm = () => store.set({ form: null });
+/** Abre o pagamento de fatura de qualquer tela. cfg: { cartaoId?, fatura? } */
+export const abrirPagarFatura = (cfg = {}) => store.set({ form: null, pagFat: cfg });
+export const fecharPagarFatura = () => store.set({ pagFat: null });
 export const setMes = (mes) => store.set({ mes });
 export { ocorrencias };

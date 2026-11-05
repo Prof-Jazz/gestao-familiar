@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'preact/hooks';
 import { html, Icone, Avatar, Dialogos, Toasts, Modal, corPessoa } from './comp.js';
-import { useStore, abrirForm, sair } from '../data/store.js';
+import { useStore, abrirForm, sair, fecharPagarFatura } from '../data/store.js';
 import { Login, RedefinirSenha, Negado, ErroCarga, SemConfig, MarcaCompacta } from './login.js';
 import { FormLancamento } from './form-lancamento.js';
+import { PagarFaturaGlobal } from './contas.js';
 import { Painel } from './painel.js';
 import { Lancamentos } from './lancamentos.js';
 import { Calendario } from './calendario.js';
@@ -30,7 +31,7 @@ export function App() {
   const s = useStore();
   const [rota, setRota] = useState(lerRota());
   const [mais, setMais] = useState(false);
-  useEffect(() => { const f = () => { setRota(lerRota()); setMais(false); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
+  useEffect(() => { const f = () => { setRota(lerRota()); setMais(false); fecharPagarFatura(); window.scrollTo(0, 0); }; window.addEventListener('hashchange', f); return () => window.removeEventListener('hashchange', f); }, []);
   const demo = s.backend?.modo === 'demo';
   const faixa = demo && html`<div class="faixa-demo" role="note">AMBIENTE DE DEMONSTRAÇÃO — dados fictícios, separados do ambiente real</div>`;
 
@@ -70,5 +71,5 @@ export function App() {
       <button class="btn sec" style="width:100%;margin-top:14px" onClick=${sair}><${Icone} n="log-out" /> Sair (${nome})</button>
     </${Modal}>`}
   </div>
-  <${FormLancamento} /><${Dialogos} /><${Toasts} />`;
+  <${FormLancamento} /><${PagarFaturaGlobal} /><${Dialogos} /><${Toasts} />`;
 }
