@@ -99,7 +99,17 @@ O pagamento da fatura **não é uma despesa nova** — as compras feitas no cart
 
 Onde pagar: **Novo lançamento → “Pagar fatura de cartão de crédito”**; ou tocando na fatura em *Próximos vencimentos* (painel) ou no *Calendário*; ou em *Contas e cartões → cartão → Pagar fatura*. Para ver os pagamentos já feitos: *Lançamentos → Filtros → Tipo → Pagamentos de fatura*.
 
-## 12. Estrutura do código
+## 12. Cartão que já estava em uso (saldo anterior)
+
+Ao cadastrar um cartão, deixe marcado **“Este cartão já está em uso”**. Depois de salvar, abre a tela *Saldo anterior* (também disponível depois em *Contas e cartões → cartão → Saldo anterior*), onde você informa:
+
+- **Fatura fechada a pagar** — o valor da fatura que já fechou e ainda não foi paga;
+- **Já gasto na fatura atual** — o que já está na fatura aberta, **sem** as parcelas da lista abaixo;
+- **Compras parceladas em andamento** — descrição, valor da parcela, “próxima parcela X de N” (a que cai na fatura atual) e categoria.
+
+A tela mostra a prévia do **limite disponível** para conferir com o app do banco. Os saldos anteriores entram nas faturas e no limite, mas **não** aparecem como gastos do mês nos gráficos (aparecem na lista com o selo *saldo anterior*). As parcelas restantes são lançadas nas próximas faturas e, por padrão, contam nos gastos de cada mês na categoria escolhida.
+
+## 13. Estrutura do código
 
 ```
 supabase/schema.sql        banco: tabelas, RLS, triggers de autoria/histórico, categorias iniciais

@@ -38,7 +38,7 @@ export function Lancamentos({ arg }) {
   const tot = useMemo(() => {
     let rec = 0, desp = 0;
     for (const l of lista) {
-      if (l.status === 'cancelado') continue;
+      if (l.status === 'cancelado' || l.ajuste_inicial) continue;
       if (l.tipo === 'receita') rec += l.valor_centavos;
       else if (l.tipo === 'despesa') desp += l.valor_centavos;
       else if (l.tipo === 'reembolso') desp -= l.valor_centavos;

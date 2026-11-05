@@ -161,6 +161,7 @@ export function itensBase(D, base, ini, fim, f = {}, { incluirPrevistos = false 
   const out = [];
   for (const l of vivos(D)) {
     if (l.status === 'cancelado') continue;
+    if (l.ajuste_inicial) continue; // saldo anterior de cartão: conta na fatura/limite, não é gasto do período
     if (l.status === 'previsto' && !incluirPrevistos) continue;
     if (!passaFiltro(l, f, D)) continue;
     let data, natureza;

@@ -2,7 +2,7 @@ import { useMemo, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, Vazio, Modal, Campo, Sel, CampoValor, SeletorCor, SeletorIcone, Barra, opcoesContas, opcoesPessoas, sugerirLogoDe, chaveLogo, ehLogo } from './comp.js';
 import { useStore, salvar, apagar, toast, confirmar, abrirForm, inserir, store, abrirPagarFatura, fecharPagarFatura } from '../data/store.js';
 import * as C from '../lib/calc.js';
-import { brl, hoje, dataBR, nomeMesCap, uuid } from '../lib/fmt.js';
+import { brl, hoje, dataBR, nomeMesCap, uuid, addMesYM, primeiroDia } from '../lib/fmt.js';
 import { ItemLanc } from './item.js';
 
 const TIPOS_CONTA = [['corrente', 'Conta corrente'], ['poupanca', 'Poupança'], ['dinheiro', 'Dinheiro / carteira'], ['reserva', 'Reserva'], ['investimento', 'Investimento'], ['outro', 'Outra']];
@@ -14,6 +14,7 @@ export function Contas() {
   const H = hoje();
   const [editConta, setEditConta] = useState(null);
   const [editCartao, setEditCartao] = useState(null);
+  const [saldoIni, setSaldoIni] = useState(null);
   const [verArq, setVerArq] = useState(false);
   const contas = D.contas.filter((c) => verArq || !c.arquivada);
   const saldos = useMemo(() => Object.fromEntries(D.contas.map((c) => [c.id, C.saldoConta(D, c, H)])), [D]);
@@ -43,16 +44,18 @@ export function Contas() {
   <h3 style="margin:22px 0 12px;font-size:18px"><${Icone} n="credit-card" /> Cartões de crédito</h3>
   ${D.cartoes.filter((c) => verArq || !c.arquivado).length === 0 ? html`<div class="card"><${Vazio} icone="credit-card" titulo="Nenhum cartão cadastrado" texto="Cadastre o cartão com limite, dia de fechamento e de vencimento — as compras e parcelas vão para a fatura certa automaticamente.">
       <button class="btn" onClick=${() => setEditCartao({})}><${Icone} n="plus" /> Cadastrar cartão</button></${Vazio}></div>`
-    : D.cartoes.filter((c) => verArq || !c.arquivado).map((c) => html`<${Cartao} key=${c.id} c=${c} D=${D} H=${H} editar=${() => setEditCartao(c)} />`)}
+    : D.cartoes.filter((c) => verArq || !c.arquivado).map((c) => html`<${Cartao} key=${c.id} c=${c} D=${D} H=${H} editar=${() => setEditCartao(c)} saldoAnterior=${() => setSaldoIni(c)} />`)}
 
   ${editConta && html`<${FormConta} c=${editConta} D=${D} fechar=${() => setEditConta(null)} />`}
-  ${editCartao && html`<${FormCartao} c=${editCartao} D=${D} fechar=${() => setEditCartao(null)} />`}`;
+  ${editCartao && html`<${FormCartao} c=${editCartao} D=${D} fechar=${() => setEditCartao(null)} depois=${(novo) => setSaldoIni(novo)} />`}
+  ${saldoIni && html`<${SaldoAnteriorCartao} c=${D.mapa.cartoes[saldoIni.id] || saldoIni} D=${D} fechar=${() => setSaldoIni(null)} />`}`;
 }
 
-function Cartao({ c, D, H, editar }) {
+function Cartao({ c, D, H, editar, saldoAnterior }) {
   const faturas = useMemo(() => C.faturasDoCartao(D, c, H), [D, c]);
   const atualId = C.faturaAtual(c, H);
-  const [selF, setSelF] = useState(() => (faturas.find((f) => f.status === 'vencida' || f.status === 'fechada')?.fatura) || atualId);
+  const [selEscolhida, setSelF] = useState(null);
+  const selF = selEscolhida || (faturas.find((f) => f.status === 'vencida' || f.status === 'fechada')?.fatura) || atualId;
   const [pagar, setPagar] = useState(null);
   const f = faturas.find((x) => x.fatura === selF) || faturas[0];
   const lim = C.limiteCartao(D, c);
@@ -88,6 +91,7 @@ function Cartao({ c, D, H, editar }) {
           <span style="flex:1"></span>
           <button class="btn sec peq" onClick=${() => abrirForm({ tipo: 'despesa', chave: 'juros' + c.id, extra: { cartao_id: c.id, conta_id: null, categoria_id: catJuros?.id, subcategoria_id: subJuros?.id, descricao: 'Juros/encargos do cartão', forma_pagamento: 'credito' } })}>
             <${Icone} n="badge-percent" /> Juros/encargos</button>
+          <button class="btn sec peq" onClick=${saldoAnterior} title="Informar o que já estava no cartão antes de usar a plataforma"><${Icone} n="history" /> Saldo anterior</button>
           <button class="btn sec peq" onClick=${() => abrirForm({ tipo: 'despesa', chave: 'compra' + c.id, extra: { cartao_id: c.id, conta_id: null, forma_pagamento: 'credito' } })}><${Icone} n="plus" /> Compra</button>
           ${f && f.aberto + f.previstas > 0 && f.status !== 'aberta' && html`<button class="btn verde peq" onClick=${() => setPagar(f)}><${Icone} n="check" /> Pagar fatura</button>`}
           ${f && f.status === 'aberta' && f.aberto > 0 && html`<button class="btn sec peq" onClick=${() => setPagar(f)}>Antecipar pagamento</button>`}
@@ -170,6 +174,90 @@ function PagarFatura({ f, c, D, fechar, trocar }) {
     </div></${Modal}>`;
 }
 
+/** Saldo anterior de um cartão que já estava em uso antes da plataforma.
+ *  Fatura fechada e gastos da fatura atual entram como "saldo anterior" (fatura + limite, fora dos gastos do mês).
+ *  Compras parceladas em andamento geram as parcelas restantes nas próximas faturas. */
+function SaldoAnteriorCartao({ c, D, fechar }) {
+  const H = hoje();
+  const atual = C.faturaAtual(c, H);
+  const fechada = primeiroDia(addMesYM(atual.slice(0, 7), -1));
+  const dAtual = C.datasFatura(c, atual), dFech = C.datasFatura(c, fechada);
+  const [vFech, setVFech] = useState(null);
+  const [vAtual, setVAtual] = useState(null);
+  const [parc, setParc] = useState([]);
+  const [contar, setContar] = useState(true);
+  const [erro, setErro] = useState(''); const [ocupado, setOcupado] = useState(false);
+  const catsDesp = D.categorias.filter((x) => x.tipo === 'despesa' && !x.parent_id && !x.arquivada);
+  const setP = (i, q) => setParc(parc.map((p, j) => (j === i ? { ...p, ...q } : p)));
+  const parcValidas = parc.filter((p) => p.valor > 0 && p.atual >= 1 && p.total >= p.atual);
+  const restantesDe = (p) => p.total - p.atual + 1;
+  const naAtual = parcValidas.reduce((s, p) => s + p.valor, 0);
+  const futuras = parcValidas.reduce((s, p) => s + p.valor * (restantesDe(p) - 1), 0);
+  const lim = C.limiteCartao(D, c);
+  const novoComprometido = lim.comprometido + (vFech || 0) + (vAtual || 0) + naAtual + futuras;
+  async function salvar() {
+    setErro('');
+    for (const [i, p] of parc.entries()) {
+      if (!p.desc?.trim()) return setErro(`Informe a descrição da compra parcelada ${i + 1}.`);
+      if (!(p.valor > 0)) return setErro(`Informe o valor da parcela da compra ${i + 1}.`);
+      if (!(p.total >= 2 && p.atual >= 1 && p.atual <= p.total)) return setErro(`Confira “parcela X de N” na compra ${i + 1}.`);
+    }
+    if (!vFech && !vAtual && !parc.length) return setErro('Informe ao menos um valor.');
+    const linhas = [];
+    const pessoa = D.pessoas.find((p) => p.perfil_id === store.s.perfil?.id);
+    const ajuste = (valor, fatura, rot) => ({ id: uuid(), tipo: 'despesa', descricao: rot, valor_centavos: valor, cartao_id: c.id, conta_id: null, fatura,
+      data_ocorrencia: H, competencia: primeiroDia(H.slice(0, 7)), data_efetiva: H, status: 'efetivado', forma_pagamento: 'credito', ajuste_inicial: true,
+      pagador_id: pessoa?.id || null, observacoes: 'Saldo que já estava no cartão antes de começar a usar a plataforma.' });
+    if (vFech > 0) linhas.push(ajuste(vFech, fechada, `Saldo anterior — fatura de ${nomeMesCap(fechada.slice(0, 7))}`));
+    if (vAtual > 0) linhas.push(ajuste(vAtual, atual, `Saldo anterior — fatura de ${nomeMesCap(atual.slice(0, 7))}`));
+    for (const p of parc) {
+      const compraId = uuid();
+      for (let n = p.atual, k = 0; n <= p.total; n++, k++) {
+        const fat = primeiroDia(addMesYM(atual.slice(0, 7), k));
+        linhas.push({ id: uuid(), tipo: 'despesa', descricao: p.desc.trim(), valor_centavos: p.valor, cartao_id: c.id, conta_id: null, fatura: fat,
+          data_ocorrencia: H, competencia: primeiroDia(addMesYM(H.slice(0, 7), k)), data_efetiva: H, status: 'efetivado', forma_pagamento: 'credito',
+          categoria_id: p.categoria_id || null, compra_id: compraId, parcela_num: n, parcelas_total: p.total, ajuste_inicial: !contar, pagador_id: pessoa?.id || null,
+          observacoes: 'Compra parcelada feita antes de começar a usar a plataforma.' });
+      }
+    }
+    setOcupado(true);
+    try { await inserir('lancamentos', linhas, 'saldoini' + c.id); toast('Saldo anterior do cartão registrado.'); fechar(); }
+    catch (e) { setErro(e.message); } finally { setOcupado(false); }
+  }
+  return html`<${Modal} titulo=${'Saldo anterior — ' + c.nome} onClose=${fechar} larg="larga"
+    rodape=${html`<button class="btn sec" onClick=${fechar}>Agora não</button><button class="btn" disabled=${ocupado} onClick=${salvar}><${Icone} n="check" /> Registrar</button>`}>
+    <div class="pilha">
+      <div class="info-msg">Informe o que <b>já estava no cartão</b> antes de você começar a lançar aqui. Esses valores entram nas faturas e no limite, mas <b>não</b> aparecem como gastos deste mês nos gráficos (eles aconteceram antes). Use o aplicativo do banco como referência.</div>
+      <div class="linha">
+        <${Campo} rot=${`Fatura fechada a pagar (${nomeMesCap(fechada.slice(0, 7))})`} dica=${`Fechou em ${dataBR(dFech.fechamento)} · vence ${dataBR(dFech.vencimento)}${dFech.vencimento < H ? ' — se já pagou, deixe em branco' : ''}`}>
+          <${CampoValor} valor=${vFech} onChange=${setVFech} /></${Campo}>
+        <${Campo} rot=${`Já gasto na fatura atual (${nomeMesCap(atual.slice(0, 7))})`} dica=${`Fecha em ${dataBR(dAtual.fechamento)}. Informe SEM as parcelas listadas abaixo — o app soma as parcelas sozinho.`}>
+          <${CampoValor} valor=${vAtual} onChange=${setVAtual} /></${Campo}>
+      </div>
+      <div class="campo"><span>Compras parceladas em andamento</span>
+        ${parc.map((p, i) => html`<div class="dividir-linha" key=${i}>
+          <label class="campo" style="flex:2 1 160px"><span>Descrição</span><input class="inp" value=${p.desc} placeholder="Ex.: Geladeira" onInput=${(e) => setP(i, { desc: e.target.value })} /></label>
+          <label class="campo" style="flex:1 1 110px"><span>Valor da parcela</span><${CampoValor} valor=${p.valor} onChange=${(valor) => setP(i, { valor })} /></label>
+          <label class="campo" style="flex:0 1 90px"><span>Próxima parcela</span><input class="inp" type="number" min="1" value=${p.atual} onInput=${(e) => setP(i, { atual: +e.target.value })} /></label>
+          <label class="campo" style="flex:0 1 90px"><span>de (total)</span><input class="inp" type="number" min="2" max="120" value=${p.total} onInput=${(e) => setP(i, { total: +e.target.value })} /></label>
+          <label class="campo" style="flex:1 1 150px"><span>Categoria</span><${Sel} valor=${p.categoria_id} vazio="—" opcoes=${catsDesp.map((x) => ({ v: x.id, r: x.nome }))} onChange=${(categoria_id) => setP(i, { categoria_id })} /></label>
+          <button type="button" class="btn fantasma ico peq" aria-label="Remover" onClick=${() => setParc(parc.filter((_, j) => j !== i))}><${Icone} n="x" /></button>
+          ${p.valor > 0 && p.total >= p.atual && html`<small class="dividir-nota">Parcelas ${p.atual} a ${p.total} (${restantesDe(p)}× de ${brl(p.valor)} = ${brl(p.valor * restantesDe(p))}) nas faturas de ${nomeMesCap(atual.slice(0, 7))} a ${nomeMesCap(addMesYM(atual.slice(0, 7), restantesDe(p) - 1))}.</small>`}
+        </div>`)}
+        <button type="button" class="btn sec peq" style="align-self:flex-start" onClick=${() => setParc([...parc, { desc: '', valor: null, atual: 1, total: 2, categoria_id: null }])}><${Icone} n="plus" /> Compra parcelada</button>
+        <small style="color:var(--txt3)">“Próxima parcela” é a que vai cair na fatura atual (${nomeMesCap(atual.slice(0, 7))}). Ex.: se a fatura atual traz a parcela 4/10, informe 4 de 10.</small>
+        ${parc.length > 0 && html`<label class="chk" style="font-size:13.5px"><input type="checkbox" checked=${contar} onChange=${(e) => setContar(e.target.checked)} /> Contar as próximas parcelas nos gastos de cada mês (por categoria)</label>`}
+      </div>
+      <div class="det-kpis">
+        <div class="det-kpi"><small>Fatura de ${nomeMesCap(fechada.slice(0, 7))}</small><b class="num">${brl((vFech || 0))}</b><span>vence ${dataBR(dFech.vencimento)}</span></div>
+        <div class="det-kpi"><small>Fatura atual (${nomeMesCap(atual.slice(0, 7))})</small><b class="num">${brl((vAtual || 0) + naAtual + (C.resumoFatura(D, c, atual, H).total))}</b><span>já lançado + saldo + parcelas</span></div>
+        <div class="det-kpi"><small>Parcelas futuras</small><b class="num">${brl(futuras)}</b><span>nas faturas seguintes</span></div>
+        <div class="det-kpi" style=${c.limite_centavos - novoComprometido < 0 ? 'border-color:var(--neg)' : ''}><small>Limite disponível ficará</small><b class="num" style=${c.limite_centavos - novoComprometido < 0 ? 'color:var(--neg)' : 'color:var(--pos)'}>${brl(c.limite_centavos - novoComprometido)}</b><span>de ${brl(c.limite_centavos)} — confira com o app do banco</span></div>
+      </div>
+      ${erro && html`<div class="erro-msg">${erro}</div>`}
+    </div></${Modal}>`;
+}
+
 function FormConta({ c, D, fechar }) {
   const [x, setX] = useState({ nome: '', tipo: 'corrente', instituicao: '', saldo_inicial_centavos: 0, data_referencia: hoje(), cor: '#2563EB', icone: 'landmark', arquivada: false, ...c });
   const [erro, setErro] = useState(''); const [ocupado, setOcupado] = useState(false);
@@ -206,7 +294,7 @@ function FormConta({ c, D, fechar }) {
     </div></${Modal}>`;
 }
 
-function FormCartao({ c, D, fechar }) {
+function FormCartao({ c, D, fechar, depois }) {
   const [x, setX] = useState({ nome: '', titular_id: null, limite_centavos: 0, dia_fechamento: 25, dia_vencimento: 5, conta_pagamento_id: D.contas[0]?.id || null, cor: '#7C3AED', icone: 'credit-card', arquivado: false, ...c });
   const [erro, setErro] = useState(''); const [ocupado, setOcupado] = useState(false);
   const [iconeManual, setIconeManual] = useState(!!c.id);
@@ -216,13 +304,14 @@ function FormCartao({ c, D, fechar }) {
     return n;
   });
   const usado = c.id && D.lancamentos.some((l) => l.cartao_id === c.id);
+  const [emUso, setEmUso] = useState(!c.id);
   const dias = Array.from({ length: 31 }, (_, i) => ({ v: String(i + 1), r: String(i + 1) }));
   async function ok() {
     if (!x.nome.trim()) return setErro('Informe o nome do cartão.');
     if (x.limite_centavos == null || x.limite_centavos < 0) return setErro('Informe o limite.');
     if (+x.dia_fechamento === +x.dia_vencimento) return setErro('Fechamento e vencimento não podem ser no mesmo dia.');
     setOcupado(true);
-    try { await salvar('cartoes', { ...x, nome: x.nome.trim(), dia_fechamento: +x.dia_fechamento, dia_vencimento: +x.dia_vencimento }); toast('Cartão salvo.'); fechar(); } catch (e) { setErro(e.message); } finally { setOcupado(false); }
+    try { const r = await salvar('cartoes', { ...x, nome: x.nome.trim(), dia_fechamento: +x.dia_fechamento, dia_vencimento: +x.dia_vencimento }); toast('Cartão salvo.'); fechar(); if (!c.id && emUso && r) depois?.(r); } catch (e) { setErro(e.message); } finally { setOcupado(false); }
   }
   async function excluir() {
     if (usado) { if (await confirmar('Arquivar cartão?', 'O cartão tem compras registradas e será arquivado (histórico preservado).', { ok: 'Arquivar' })) { await salvar('cartoes', { ...x, arquivado: true }); fechar(); } return; }
@@ -239,6 +328,8 @@ function FormCartao({ c, D, fechar }) {
         <${Campo} rot="Dia do fechamento" obrig><${Sel} valor=${String(x.dia_fechamento)} onChange=${(v) => set({ dia_fechamento: +v })} opcoes=${dias} /></${Campo}>
         <${Campo} rot="Dia do vencimento" obrig><${Sel} valor=${String(x.dia_vencimento)} onChange=${(v) => set({ dia_vencimento: +v })} opcoes=${dias} /></${Campo}></div>
       <small style="color:var(--txt3)">Compras feitas no dia do fechamento ou depois entram na fatura seguinte.</small>
+      ${!c.id && html`<label class="chk aviso-msg" style="display:flex"><input type="checkbox" checked=${emUso} onChange=${(e) => setEmUso(e.target.checked)} />
+        <span>Este cartão <b>já está em uso</b> (tem fatura a pagar ou compras parceladas). Depois de salvar, vou pedir esses valores para o limite ficar certo.</span></label>`}
       <${Campo} rot="Conta usada para pagar a fatura"><${Sel} valor=${x.conta_pagamento_id} onChange=${(v) => set({ conta_pagamento_id: v })} vazio="—" opcoes=${opcoesContas(D)} /></${Campo}>
       <${Campo} rot="Cor"><${SeletorCor} valor=${x.cor} onChange=${(v) => set({ cor: v })} /></${Campo}>
       <${Campo} rot="Ícone"><${SeletorIcone} logos valor=${x.icone || 'credit-card'} cor=${x.cor} onChange=${(v) => { setIconeManual(true); set({ icone: v }); }} onLogo=${(l) => set({ cor: l.cor })} /></${Campo}>
