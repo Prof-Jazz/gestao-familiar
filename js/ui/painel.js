@@ -5,6 +5,12 @@ import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
 import { brl, hoje, primeiroDia, ultimoDia, dataBR, nomeMes, difDias, pct, addDias } from '../lib/fmt.js';
 
+/** Bom dia / Boa tarde / Boa noite pelo horário de Brasília. */
+function saudacao() {
+  const h = +new Intl.DateTimeFormat('pt-BR', { hour: 'numeric', hourCycle: 'h23', timeZone: 'America/Sao_Paulo' }).format(new Date());
+  return h >= 5 && h < 12 ? 'Bom dia' : h >= 12 && h < 18 ? 'Boa tarde' : 'Boa noite';
+}
+
 export function Painel() {
   const { D, mes, perfil } = useStore();
   const H = hoje();
@@ -12,7 +18,7 @@ export function Painel() {
   const vazioTotal = D.lancamentos.length === 0;
 
   return html`
-  <div class="topo"><div><h2>Olá, ${perfil?.nome}!</h2><div class="sub">Resumo de ${nomeMes(mes)}</div></div><span class="esp"></span><${SeletorMes} /></div>
+  <div class="topo"><div><h2>${saudacao()}, ${perfil?.nome}!</h2><div class="sub">Resumo de ${nomeMes(mes)}</div></div><span class="esp"></span><${SeletorMes} /></div>
 
   ${vazioTotal && html`<div class="card" style="margin-bottom:16px"><${Vazio} icone="sparkles" titulo="Tudo pronto para começar"
     texto=${D.contas.length ? 'Registre a primeira receita ou despesa — os painéis e gráficos se montam a partir dos lançamentos.' : 'Comece cadastrando as contas da família (conta corrente, carteira, reserva) com o saldo de hoje. Depois, registre os lançamentos.'}>
