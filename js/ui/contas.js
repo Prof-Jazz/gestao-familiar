@@ -116,7 +116,7 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
             <${Icone} n="badge-percent" /> Juros/encargos</button>
           <button class="btn sec peq" onClick=${saldoAnterior} title="Informar o que já estava no cartão antes de usar a plataforma"><${Icone} n="history" /> Saldo anterior</button>
           <button class="btn sec peq" onClick=${() => abrirForm({ tipo: 'despesa', chave: 'compra' + c.id, extra: { cartao_id: c.id, conta_id: null, forma_pagamento: 'credito' } })}><${Icone} n="plus" /> Compra</button>
-          ${f && f.aberto + f.previstas > 0 && html`<button class="btn verde peq" onClick=${() => setPagar(f)}><${Icone} n="check" /> Pagar fatura</button>`}
+          ${f && html`<button class="btn verde peq" onClick=${() => setPagar(f.aberto + f.previstas > 0 ? f : (faturas.find((x) => x.fatura >= f.fatura && x.aberto + x.previstas > 0) || f))}><${Icone} n="check" /> Pagar fatura</button>`}
         </div>
         ${f && html`<div class="grade" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px">
           <${Mini} r="Fechamento" v=${dataBR(f.fechamento)} /><${Mini} r="Vencimento" v=${dataBR(f.vencimento)} />
