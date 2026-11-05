@@ -33,13 +33,12 @@ export function periodoAnterior({ ini, fim }) {
 
 export function Analises() {
   const { D, mes } = useStore();
-  const [base, setBase] = useState('consumo');
+  const base = 'consumo'; // gastos no mês em que aconteceram (cartão conta na data da compra)
   const [preset, setPreset] = useState('6m');
   const [livre, setLivre] = useState({ ini: primeiroDia(mes), fim: ultimoDia(mes) });
   const [f, setF] = useState({});
   const [gran, setGran] = useState('mes');
   const [cats, setCats] = useState([]);
-  const [comparar, setComparar] = useState(true);
   const [dimRank, setDimRank] = useState('categoria');
   const [fatia, setFatia] = useState(null);
   const [verFiltros, setVerFiltros] = useState(false);
@@ -57,7 +56,9 @@ export function Analises() {
     const rank = C.agrupar(D, itens, dimRank);
     // evolução
     const serie = C.serieTemporal(itens, P.ini, P.fim, gran);
-    const serieA = C.serieTemporal(itensA, PA.ini, PA.fim, gran);
+    const serieRec = C.serieTemporal(itens.filter((it) => C.valorReceita(it) > 0), P.ini, P.fim, gran, C.valorReceita);
+    const serieA = null;
+    const tres = [-2, -1, 0].map((k) => { const ym = addMesYM(mes, k); return { ym, ...C.totais(C.itensBase(D, base, primeiroDia(ym), ultimoDia(ym), f)) }; });
     const porCatSerie = cats.map((id) => ({ id, s: C.serieTemporal(itens.filter((it) => it.l.categoria_id === id), P.ini, P.fim, gran) }));
     // receitas x despesas por mês (sempre mensal)
     const meses = []; for (let ym = P.ini.slice(0, 7); ym <= P.fim.slice(0, 7); ym = addMesYM(ym, 1)) meses.push(ym);
@@ -67,24 +68,21 @@ export function Analises() {
     // saldo
     const ymIni = P.ini.slice(0, 7); const ymFim = addMesYM(H.slice(0, 7), 6) > P.fim.slice(0, 7) ? addMesYM(H.slice(0, 7), 6) : P.fim.slice(0, 7);
     const saldo = C.serieSaldo(D, ymIni, ymFim, H);
-    return { itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
+    return { tres, serieRec, itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
   }, [D, base, P.ini, P.fim, f, gran, cats.join(), dimRank, mes]);
 
   const rotSerie = (k) => (gran === 'mes' ? mesCurto(k) : dataBR(k).slice(0, 5));
-  const chave = [base, P.ini, P.fim, JSON.stringify(f), gran, cats.join(), comparar, D.lancamentos.length, r.tot.despesas, r.tot.receitas].join('|');
+  const chave = [base, P.ini, P.fim, JSON.stringify(f), gran, cats.join(), mes, D.lancamentos.length, r.tot.despesas, r.tot.receitas].join('|');
   const vDesp = variacao(r.tot.despesas, r.totA.despesas);
   const vRec = variacao(r.tot.receitas, r.totA.receitas);
   const subs = f.categoria_id ? D.categorias.filter((c) => c.parent_id === f.categoria_id).map((c) => ({ v: c.id, r: c.nome })) : [];
   const catsDesp = D.categorias.filter((c) => c.tipo === 'despesa' && !c.parent_id);
 
   return html`
-  <div class="topo"><div><h2>Análises</h2><div class="sub">${P.rot} · comparado com ${dataBR(PA.ini)} a ${dataBR(PA.fim)}</div></div><span class="esp"></span></div>
+  <div class="topo"><div><h2>Análises</h2><div class="sub">${P.rot}</div></div><span class="esp"></span></div>
 
   <div class="card" style="margin-bottom:16px">
     <div class="filtros">
-      <div class="campo" style="flex:0 1 auto"><span>Base dos indicadores</span><div class="btn-grupo">
-        <button class=${base === 'consumo' ? 'on' : ''} onClick=${() => setBase('consumo')}>Consumo (competência)</button>
-        <button class=${base === 'caixa' ? 'on' : ''} onClick=${() => setBase('caixa')}>Fluxo de caixa</button></div></div>
       <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${setPreset} opcoes=${[{ v: 'mes', r: 'Mês selecionado' }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
       ${preset === 'livre' && html`<${Campo} rot="De"><input class="inp" type="date" value=${livre.ini} onInput=${(e) => setLivre({ ...livre, ini: e.target.value })} /></${Campo}>
         <${Campo} rot="Até"><input class="inp" type="date" value=${livre.fim} onInput=${(e) => setLivre({ ...livre, fim: e.target.value })} /></${Campo}>`}
@@ -100,31 +98,33 @@ export function Analises() {
       <${Campo} rot="Projeto"><${Sel} valor=${f.projeto_id} onChange=${(v) => set({ projeto_id: v })} vazio="Todos" opcoes=${D.projetos.map((p) => ({ v: p.id, r: p.nome }))} /></${Campo}>
       <button class="btn fantasma" onClick=${() => setF({})}><${Icone} n="x" /> Limpar</button>
     </div>`}
-    <div style="margin-top:10px;font-size:12.5px;color:var(--txt3)"><${Base} base=${base} /> ${C.BASES[base].desc} Somente lançamentos realizados.</div>
+    <div style="margin-top:10px;font-size:12.5px;color:var(--txt3)">Compras no cartão contam no mês em que foram feitas; o pagamento da fatura não conta de novo. Transferências entre contas não entram.</div>
   </div>
 
   <div class="grade g-kpi" style="margin-bottom:16px">
-    <div class="card kpi"><div class="rot">Despesas no período</div><div class="val num">${brl(r.tot.despesas)}</div><div class="det"><${Variacao} v=${vDesp} inverso /> vs. período anterior (${brl(r.totA.despesas)})</div></div>
-    <div class="card kpi"><div class="rot">Receitas no período</div><div class="val num">${brl(r.tot.receitas)}</div><div class="det"><${Variacao} v=${vRec} /> vs. período anterior (${brl(r.totA.receitas)})</div></div>
-    <div class="card kpi"><div class="rot">Resultado</div><div class="val"><${Tom} v=${r.tot.resultado} /></div><div class="det"><${Base} base=${base} /></div></div>
-    <div class="card kpi"><div class="rot">Lançamentos de despesa</div><div class="val num">${r.tot.qtdDespesas}</div><div class="det">Média ${r.tot.qtdDespesas ? brl(Math.round(r.tot.despesas / r.tot.qtdDespesas)) : '—'} por lançamento</div></div>
+    <div class="card kpi"><div class="rot">Receitas no período</div><div class="val num" style="color:var(--pos)">${brl(r.tot.receitas)}</div><div class="det">Tudo o que entrou</div></div>
+    <div class="card kpi"><div class="rot">Gastos no período</div><div class="val num" style="color:var(--neg)">${brl(r.tot.despesas)}</div><div class="det">${r.tot.qtdDespesas} lançamento(s)</div></div>
+    <div class="card kpi"><div class="rot">${r.tot.resultado >= 0 ? 'Sobrou' : 'Faltou'}</div><div class="val"><${Tom} v=${r.tot.resultado} /></div><div class="det">Receitas − gastos</div></div>
   </div>
 
+  <${Comparacao3} tres=${r.tres} />
+
   ${r.itens.length === 0 ? html`<div class="card"><${Vazio} icone="chart-line" titulo="Sem dados para estes filtros" texto="Não há lançamentos realizados no período e base escolhidos. Ajuste o período, a base ou os filtros." /></div>` : html`
-  <div class="card" style="margin-bottom:16px"><h3><${Icone} n="chart-line" /> Evolução dos gastos <span class="acao"><${Base} base=${base} /></span></h3>
+  <div class="card" style="margin-bottom:16px"><h3><${Icone} n="chart-line" /> Evolução das receitas e dos gastos</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       <div class="btn-grupo">${[['dia', 'Diária'], ['semana', 'Semanal'], ['mes', 'Mensal']].map(([v, t]) => html`<button class=${gran === v ? 'on' : ''} onClick=${() => setGran(v)}>${t}</button>`)}</div>
-      <label class="chk" style="font-size:13px"><input type="checkbox" checked=${comparar} onChange=${(e) => setComparar(e.target.checked)} /> Comparar com período anterior</label>
     </div>
+    <div style="font-size:12.5px;color:var(--txt3);margin-bottom:6px">Para ver uma categoria de gasto em detalhe, toque nela:</div>
     <div class="chips" style="margin-bottom:10px">${catsDesp.map((c) => html`<button class=${'chip' + (cats.includes(c.id) ? ' on' : '')} style=${cats.includes(c.id) ? `background:${c.cor};border-color:${c.cor}` : ''}
       onClick=${() => setCats(cats.includes(c.id) ? cats.filter((x) => x !== c.id) : [...cats, c.id])}><${Icone} n=${c.icone} />${c.nome}</button>`)}</div>
-    <${Grafico} chave=${'ev' + chave} altura=${300} rotulo="Evolução dos gastos" cfg=${{ type: 'line',
+    <${Grafico} chave=${'ev' + chave} altura=${300} rotulo="Evolução das receitas e dos gastos" cfg=${{ type: 'line',
       data: { labels: r.serie.chaves.map(rotSerie), datasets: [
         ...(cats.length ? r.porCatSerie.map(({ id, s }) => ({ label: D.mapa.categorias[id]?.nome, data: s.vals.map((v) => v / 100), borderColor: D.mapa.categorias[id]?.cor, backgroundColor: D.mapa.categorias[id]?.cor + '22', tension: .3, pointRadius: 2 }))
-          : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), borderColor: '#5B4FE9', backgroundColor: '#5B4FE922', fill: true, tension: .3, pointRadius: 2 }]),
-        ...(comparar && !cats.length ? [{ label: 'Período anterior', data: r.serieA.vals.slice(0, r.serie.vals.length).map((v) => v / 100), borderColor: '#94A3B8', borderDash: [6, 5], tension: .3, pointRadius: 0 }] : []),
+          : [{ label: 'Receitas', data: r.serieRec.vals.map((v) => v / 100), borderColor: '#16A34A', backgroundColor: '#16A34A1A', fill: true, tension: .3, pointRadius: 3 },
+             { label: 'Gastos', data: r.serie.vals.map((v) => v / 100), borderColor: '#E11D48', backgroundColor: '#E11D481A', fill: true, tension: .3, pointRadius: 3 }]),
       ] }, options: optsEixo() }} />
     ${(cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
+    ${!cats.length && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
   </div>
 
   <div class="grade g-2" style="margin-bottom:16px">
@@ -133,15 +133,15 @@ export function Analises() {
   </div>
 
   <div class="grade" style="margin-bottom:16px">
-    <div class="card"><h3><${Icone} n="chart-column" /> Receitas × despesas <span class="acao"><${Base} base=${base} /></span></h3>
+    <div class="card"><h3><${Icone} n="chart-column" /> Receitas × gastos mês a mês</h3>
       <${Grafico} chave=${'rx' + chave} altura=${300} rotulo="Receitas versus despesas por mês" cfg=${{ type: 'bar',
         data: { labels: r.meses.map(mesCurto), datasets: [
-          { type: 'line', label: 'Resultado', data: r.rxd.map((t) => t.resultado / 100), borderColor: '#1B1F3B', backgroundColor: '#1B1F3B', pointRadius: 4, pointStyle: 'rectRot', tension: .2,
+          { type: 'line', label: 'Sobrou', data: r.rxd.map((t) => t.resultado / 100), borderColor: '#1B1F3B', backgroundColor: '#1B1F3B', pointRadius: 4, pointStyle: 'rectRot', tension: .2,
             segment: { borderColor: (ctx) => (ctx.p1.parsed.y < 0 ? '#D1343E' : '#12855A') }, pointBackgroundColor: r.rxd.map((t) => (t.resultado < 0 ? '#D1343E' : t.resultado > 0 ? '#12855A' : '#6B7280')) },
           { label: 'Receitas', data: r.rxd.map((t) => t.receitas / 100), backgroundColor: '#22C55E', borderRadius: 6 },
-          { label: 'Despesas', data: r.rxd.map((t) => t.despesas / 100), backgroundColor: '#F43F5E', borderRadius: 6 },
+          { label: 'Gastos', data: r.rxd.map((t) => t.despesas / 100), backgroundColor: '#F43F5E', borderRadius: 6 },
         ] }, options: optsEixo() }} />
-      <div class="tabela-wrap" style="margin-top:8px"><table class="tab"><thead><tr><th>Mês</th><th class="r">Receitas</th><th class="r">Despesas</th><th class="r">Resultado</th></tr></thead>
+      <div class="tabela-wrap" style="margin-top:8px"><table class="tab"><thead><tr><th>Mês</th><th class="r">Receitas</th><th class="r">Gastos</th><th class="r">Sobrou</th></tr></thead>
         <tbody>${r.meses.map((ym, i) => html`<tr><td>${mesCurto(ym)}</td><td class="r num">${brl(r.rxd[i].receitas)}</td><td class="r num">${brl(r.rxd[i].despesas)}</td><td class="r"><${Tom} v=${r.rxd[i].resultado} /></td></tr>`)}</tbody></table></div>
     </div>
   </div>
@@ -152,7 +152,7 @@ export function Analises() {
   </div>`}
 
   <div class="grade g-2">
-    <div class="card"><h3><${Icone} n="target" /> Planejado × realizado — ${nomeMesCap(mes)} <span class="acao"><${Base} base="consumo" /></span></h3>
+    <div class="card"><h3><${Icone} n="target" /> Planejado × realizado — ${nomeMesCap(mes)}</h3>
       ${r.orc.linhas.filter((l) => l.orcado != null).length ? html`<${Grafico} chave=${'orc' + mes + D.lancamentos.length + D.orcamentos.length} altura=${Math.max(220, r.orc.linhas.filter((l) => l.orcado != null).length * 46)} rotulo="Orçamento versus realizado por categoria" cfg=${{ type: 'bar',
           data: { labels: r.orc.linhas.filter((l) => l.orcado != null).map((l) => l.categoria.nome), datasets: [
             { label: 'Planejado', data: r.orc.linhas.filter((l) => l.orcado != null).map((l) => l.orcado / 100), backgroundColor: '#CBD5E1', borderRadius: 6 },
@@ -172,14 +172,14 @@ export function Analises() {
   </div>
 
   ${fatia && html`<${Modal} titulo=${fatia.rotulo} onClose=${() => setFatia(null)} larg="larga">
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px"><span class="pilula pri">${brl(fatia.valor)}</span><span class="pilula zero">${fatia.qtd} lançamento(s)</span><span class="pilula zero">${pct(fatia.pct)} do total</span><${Base} base=${base} /></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px"><span class="pilula pri">${brl(fatia.valor)}</span><span class="pilula zero">${fatia.qtd} lançamento(s)</span><span class="pilula zero">${pct(fatia.pct)} do total</span></div>
     <div class="lista">${fatia.itens.slice().sort((a, b) => b.data.localeCompare(a.data)).map((it) => html`<${ItemLanc} l=${it.l} D=${D} />`)}</div>
   </${Modal}>`}`;
 }
 
 function Distribuicao({ titulo, icone, ag, chave, base, abrir, vazio, receita }) {
   const gs = C.rankingValor(ag.grupos);
-  return html`<div class="card"><h3><${Icone} n=${icone} /> ${titulo} <span class="acao"><${Base} base=${base} /></span></h3>
+  return html`<div class="card"><h3><${Icone} n=${icone} /> ${titulo}</h3>
     ${gs.length ? html`
       <div style="position:relative">
         <${Grafico} chave=${chave} altura=${240} rotulo=${titulo} onClique=${(i) => abrir(gs[i])} cfg=${{ type: 'doughnut',
@@ -219,9 +219,9 @@ function DetalheGastos({ D, catId, itens, itensA, totalPeriodo, base, abrir }) {
       ${grupos.length > 10 && html`<small style="color:var(--txt3)">+ ${grupos.length - 10} outros</small>`}</div>`;
   };
   return html`<div class="detalhe-gasto" style=${`--c:${cor}`}>
-    <div class="det-cab"><${CatIcone} cor=${cor} icone=${cat?.icone || 'coins'} /><b>${titulo}</b><span style="flex:1"></span><${Base} base=${base} /></div>
+    <div class="det-cab"><${CatIcone} cor=${cor} icone=${cat?.icone || 'coins'} /><b>${titulo}</b></div>
     <div class="det-kpis">
-      <div class="det-kpi destaque"><small>Total gasto</small><b class="num">${brl(tot)}</b><span><${Variacao} v=${variacao(tot, totA)} inverso /> vs. período anterior</span></div>
+      <div class="det-kpi destaque"><small>Total gasto</small><b class="num">${brl(tot)}</b><span>no período</span></div>
       ${cat && html`<div class="det-kpi"><small>Do total de despesas</small><b class="num">${pct(totalPeriodo ? (tot / totalPeriodo) * 100 : 0)}</b><span class="det-barra"><i style=${`width:${totalPeriodo ? Math.min(100, (tot / totalPeriodo) * 100) : 0}%;background:${cor}`}></i></span></div>`}
       <div class="det-kpi"><small>Lançamentos</small><b class="num">${qtd}</b><span>Média ${qtd ? brl(Math.round(tot / qtd)) : '—'} cada</span></div>
       <div class="det-kpi"><small>Lugar onde mais gastou</small><b>${lugares[0]?.rotulo || '—'}</b><span>${lugares[0] ? `${brl(lugares[0].valor)} · ${pct(tot ? (lugares[0].valor / tot) * 100 : 0)}` : ''}</span></div>
@@ -244,11 +244,57 @@ export function Variacao({ v, inverso }) {
 
 function Ranking({ titulo, grupos, base, dim, setDim, abrir, principal }) {
   const top = grupos.slice(0, 10);
-  return html`<div class="card"><h3><${Icone} n=${principal === 'valor' ? 'coins' : 'repeat'} /> ${titulo} <span class="acao"><${Base} base=${base} /></span></h3>
+  return html`<div class="card"><h3><${Icone} n=${principal === 'valor' ? 'coins' : 'repeat'} /> ${titulo}</h3>
     <div class="btn-grupo" style="margin-bottom:10px">${[['categoria', 'Categorias'], ['subcategoria', 'Subcategorias'], ['favorecido', 'Estabelecimentos']].map(([v, t]) => html`<button class=${dim === v ? 'on' : ''} onClick=${() => setDim(v)}>${t}</button>`)}</div>
     ${top.length ? html`<div class="tabela-wrap"><table class="tab"><thead><tr><th>#</th><th>${dim === 'favorecido' ? 'Estabelecimento' : 'Categoria'}</th><th class="r">Valor</th><th class="r">Vezes</th><th class="r">Part.</th></tr></thead>
       <tbody>${top.map((g, i) => html`<tr style="cursor:pointer" onClick=${() => abrir(g)}><td><span class=${'rank-pos p' + (i + 1)}>${i + 1}</span></td>
         <td><span style="display:flex;gap:8px;align-items:center"><${CatIcone} p cor=${g.cor} icone=${g.icone} /><span style="min-width:0">${g.rotulo}</span></span></td>
         <td class="r num" style=${principal === 'valor' ? 'font-weight:800' : ''}>${brl(g.valor)}</td><td class="r num" style=${principal === 'qtd' ? 'font-weight:800' : ''}>${g.qtd}</td><td class="r num">${pct(g.pct)}</td></tr>`)}</tbody></table></div>`
       : html`<${Vazio} icone="list" titulo="Sem dados" />`}</div>`;
+}
+
+/** Mês selecionado comparado com os 2 meses anteriores. */
+function Comparacao3({ tres }) {
+  const linhas = [['Receitas', 'receitas', false], ['Gastos', 'despesas', true], ['Sobrou', 'resultado', false]];
+  return html`<div class="card" style="margin-bottom:16px"><h3><${Icone} n="calendar-days" /> Comparação com os 2 meses anteriores</h3>
+    <div class="tabela-wrap"><table class="tab comp3"><thead><tr><th></th>${tres.map((t, i) => html`<th class="r">${nomeMesCap(t.ym)}${i === 2 ? ' (atual)' : ''}</th>`)}</tr></thead>
+      <tbody>${linhas.map(([rot, k, inv]) => html`<tr><td><b>${rot}</b></td>${tres.map((t, i) => html`<td class="r">
+        <div class="num" style=${`font-weight:${i === 2 ? 800 : 600};color:${k === 'receitas' ? 'var(--pos)' : k === 'despesas' ? 'var(--neg)' : t[k] < 0 ? 'var(--neg)' : 'var(--txt)'}`}>${brl(t[k])}</div>
+        ${i > 0 && html`<div style="margin-top:2px"><${Variacao} v=${variacao(t[k], tres[i - 1][k])} inverso=${inv} /></div>`}</td>`)}</tr>`)}</tbody></table></div>
+    <div style="font-size:12px;color:var(--txt3);margin-top:6px">As setas comparam cada mês com o mês anterior a ele. Mude o mês no topo da tela para comparar outros meses.</div>
+  </div>`;
+}
+
+/** Todas as receitas do período: de onde veio e em que categoria. */
+function DetalheReceitas({ D, itens, abrir }) {
+  const its = itens.filter((it) => C.valorReceita(it) > 0);
+  const tot = its.reduce((s, it) => s + C.valorReceita(it), 0);
+  const cor = '#16A34A';
+  if (!its.length) return html`<div class="detalhe-gasto" style=${`--c:${cor};margin-top:14px`}><div class="det-cab"><${CatIcone} cor=${cor} icone="hand-coins" /><b>Todas as receitas do período</b></div>
+    <${Vazio} icone="hand-coins" titulo="Nenhuma receita no período" /></div>`;
+  const origens = C.rankingValor(C.agrupar(D, its, 'favorecido', C.valorReceita).grupos);
+  const porCat = C.rankingValor(C.agrupar(D, its, 'categoria', C.valorReceita).grupos);
+  const maior = its.slice().sort((a, b) => b.valor - a.valor)[0];
+  const Lista = ({ titulo: t, grupos, icone }) => {
+    const topo = grupos[0]?.valor || 1;
+    return html`<div class="det-lista"><h4><${Icone} n=${icone} /> ${t}</h4>
+      ${grupos.slice(0, 10).map((g, i) => html`<button type="button" class="det-linha" onClick=${() => abrir(g)} title="Ver os lançamentos">
+        <span class=${'rank-pos p' + (i + 1)}>${i + 1}</span><${CatIcone} p cor=${g.cor} icone=${g.icone} />
+        <span class="det-meio"><span class="det-nome">${g.rotulo}</span><span class="det-barra"><i style=${`width:${Math.max(2, (g.valor / topo) * 100)}%;background:${cor}`}></i></span>
+          <small>${g.qtd} lançamento(s) · ${pct(tot ? (g.valor / tot) * 100 : 0)} do total</small></span>
+        <b class="num">${brl(g.valor)}</b></button>`)}</div>`;
+  };
+  return html`<div class="detalhe-gasto" style=${`--c:${cor};margin-top:14px`}>
+    <div class="det-cab"><${CatIcone} cor=${cor} icone="hand-coins" /><b>Todas as receitas do período</b></div>
+    <div class="det-kpis">
+      <div class="det-kpi destaque"><small>Total recebido</small><b class="num">${brl(tot)}</b><span>no período</span></div>
+      <div class="det-kpi"><small>Lançamentos</small><b class="num">${its.length}</b><span>Média ${brl(Math.round(tot / its.length))} cada</span></div>
+      <div class="det-kpi"><small>Maior fonte</small><b>${origens[0]?.rotulo || '—'}</b><span>${origens[0] ? `${brl(origens[0].valor)} · ${pct(tot ? (origens[0].valor / tot) * 100 : 0)}` : ''}</span></div>
+      <div class="det-kpi"><small>Maior receita única</small><b class="num">${brl(maior.valor)}</b><span>${maior.l.descricao} · ${dataBR(maior.data)}</span></div>
+    </div>
+    <div class="grade g-2">
+      <${Lista} titulo="De onde veio" grupos=${origens} icone="building-2" />
+      <${Lista} titulo="Por categoria" grupos=${porCat} icone="tag" />
+    </div>
+  </div>`;
 }
