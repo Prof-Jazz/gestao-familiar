@@ -11,7 +11,7 @@ export const CATEGORIAS_INICIAIS = [
   ['despesa', 'Lazer e passeios', 'ticket', '#EAB308', 'Cinema=clapperboard|Eventos=party-popper|Passeios=trees|Atividades em família=users'],
   ['despesa', 'Serviços domésticos', 'brush-cleaning', '#14B8A6', 'Diarista=sparkles|Lavanderia=washing-machine|Jardinagem=flower-2|Outros serviços=wrench'],
   ['despesa', 'Cuidados pessoais', 'scissors', '#A78BFA', 'Cabeleireiro=scissors|Barbearia=user-round|Cosméticos=gem|Higiene pessoal=bath'],
-  ['despesa', 'Assinaturas e tecnologia', 'tablet-smartphone', '#4F46E5', 'Streaming=tv|Aplicativos=smartphone|Softwares=laptop|Armazenamento digital=cloud|Netflix=marca:netflix|Spotify=marca:spotify|Prime Video=marca:prime-video|Disney+=marca:disney-plus|HBO Max=marca:hbo-max|YouTube Premium=marca:youtube|ChatGPT=marca:chatgpt|Claude=marca:claude|Adobe=marca:adobe|Foxit=marca:foxit'],
+  ['despesa', 'Assinaturas e tecnologia', 'tablet-smartphone', '#4F46E5', 'Streaming=tv|Aplicativos=smartphone|Softwares=laptop|Armazenamento digital=cloud|Netflix=marca:netflix|Spotify=marca:spotify|Prime Video=marca:prime-video|Disney+=marca:disney-plus|Apple TV=marca:apple-tv|HBO Max=marca:hbo-max|YouTube Premium=marca:youtube|ChatGPT=marca:chatgpt|Claude=marca:claude|Adobe=marca:adobe|Foxit=marca:foxit'],
   ['despesa', 'Viagens', 'plane', '#0EA5E9', 'Passagens=plane-takeoff|Hospedagem=hotel|Alimentação em viagem=utensils|Passeios em viagem=map'],
   ['despesa', 'Presentes e comemorações', 'gift', '#FB7185', 'Aniversários=cake|Presentes=gift|Festas=party-popper'],
   ['despesa', 'Contribuições e doações', 'hand-heart', '#CA8A04', 'Dízimos=church|Ofertas=hand-coins|Doações=heart-handshake|Ações solidárias=hand-heart'],

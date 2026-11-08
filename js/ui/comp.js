@@ -30,6 +30,7 @@ export const LOGOS = [
   { id: 'spotify', nome: 'Spotify', cor: '#1ED760', chaves: ['spotify'] },
   { id: 'prime-video', nome: 'Prime Video', cor: '#1FA8E0', chaves: ['prime video', 'amazon prime', 'prime'] },
   { id: 'disney-plus', nome: 'Disney+', cor: '#0B4A5E', chaves: ['disney'] },
+  { id: 'apple-tv', nome: 'Apple TV', cor: '#000000', chaves: ['apple tv', 'appletv', 'apple.com/bill'] },
   { id: 'hbo-max', nome: 'HBO Max', cor: '#7B2FE0', chaves: ['hbo', 'max'] },
   { id: 'youtube', nome: 'YouTube', cor: '#FF0000', chaves: ['youtube'] },
   { id: 'chatgpt', nome: 'ChatGPT', cor: '#10A37F', chaves: ['chatgpt', 'openai'] },
