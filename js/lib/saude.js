@@ -9,7 +9,7 @@ const nivel = (n, rot) => ({ n, rot }); // n: 'otimo' | 'bom' | 'atencao' | 'cri
  * Devolve números + classificação + frases de pontos fortes, de atenção e sugestões.
  */
 export function saudeFinanceira(D, ini, fim, hoje, f = {}) {
-  const itens = C.itensBase(D, 'consumo', ini, fim, f);
+  const itens = C.itensBase(D, 'consumo', ini, fim, f, { soPagas: true });
   const tot = C.totais(itens);
   // meses com algum movimento (evita diluir a média em meses anteriores ao uso da plataforma)
   const nMeses = Math.max(1, new Set(itens.map((it) => it.data.slice(0, 7))).size);

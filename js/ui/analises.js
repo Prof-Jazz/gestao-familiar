@@ -56,8 +56,8 @@ export function Analises() {
   const H = hoje();
 
   const r = useMemo(() => {
-    const itens = C.itensBase(D, base, P.ini, P.fim, f);
-    const itensA = C.itensBase(D, base, PA.ini, PA.fim, f);
+    const itens = C.itensBase(D, base, P.ini, P.fim, f, { soPagas: true });
+    const itensA = C.itensBase(D, base, PA.ini, PA.fim, f, { soPagas: true });
     const tot = C.totais(itens), totA = C.totais(itensA);
     const porCat = C.agrupar(D, itens, 'categoria');
     const porCatRec = C.agrupar(D, itens, 'categoria', C.valorReceita);
@@ -66,7 +66,7 @@ export function Analises() {
     const serie = C.serieTemporal(itens, P.ini, P.fim, gran);
     const serieRec = C.serieTemporal(itens.filter((it) => C.valorReceita(it) > 0), P.ini, P.fim, gran, C.valorReceita);
     const serieA = null;
-    const tres = [-2, -1, 0].map((k) => { const ym = addMesYM(mes, k); return { ym, ...C.totais(C.itensBase(D, base, primeiroDia(ym), ultimoDia(ym), f)) }; });
+    const tres = [-2, -1, 0].map((k) => { const ym = addMesYM(mes, k); return { ym, ...C.totais(C.itensBase(D, base, primeiroDia(ym), ultimoDia(ym), f, { soPagas: true })) }; });
     const porCatSerie = cats.map((id) => ({ id, s: C.serieTemporal(itens.filter((it) => it.l.categoria_id === id), P.ini, P.fim, gran) }));
     // receitas x despesas por mês (sempre mensal)
     const meses = []; for (let ym = P.ini.slice(0, 7); ym <= P.fim.slice(0, 7); ym = addMesYM(ym, 1)) meses.push(ym);
@@ -130,7 +130,7 @@ export function Analises() {
       <${Campo} rot="Projeto"><${Sel} valor=${f.projeto_id} onChange=${(v) => set({ projeto_id: v })} vazio="Todos" opcoes=${D.projetos.map((p) => ({ v: p.id, r: p.nome }))} /></${Campo}>
       <button class="btn fantasma" onClick=${() => setF({})}><${Icone} n="x" /> Limpar</button>
     </div>`}
-    <div style="margin-top:10px;font-size:12.5px;color:var(--txt3)">Compras no cartão contam no mês em que foram feitas; o pagamento da fatura não conta de novo. Transferências entre contas não entram.</div>
+    <div style="margin-top:10px;font-size:12.5px;color:var(--txt3)">Só entra o que já foi pago. Compras no cartão entram (na data da compra) depois que a fatura delas for paga; o pagamento da fatura não conta de novo. Transferências entre contas não entram.</div>
   </div>
 
   <div class="grade g-kpi" style="margin-bottom:16px">

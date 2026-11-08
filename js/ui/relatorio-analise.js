@@ -14,7 +14,7 @@ export function RelatorioAnalise({ D, P, f, mes, hoje, perfil, filtrosTxt }) {
   const meses = mesesDoPeriodo(P.ini, P.fim);
   const porMes = meses.map((ym) => ({ ym, ...C.totais(S.itens.filter((it) => it.data.slice(0, 7) === ym)) }));
   const maxMes = Math.max(1, ...porMes.map((m) => Math.max(m.receitas, m.despesas)));
-  const tres = [-2, -1, 0].map((k) => { const ym = addMesYM(mes, k); return { ym, ...C.totais(C.itensBase(D, 'consumo', primeiroDia(ym), ultimoDia(ym), f)) }; });
+  const tres = [-2, -1, 0].map((k) => { const ym = addMesYM(mes, k); return { ym, ...C.totais(C.itensBase(D, 'consumo', primeiroDia(ym), ultimoDia(ym), f, { soPagas: true })) }; });
   const gCat = C.rankingValor(C.agrupar(D, S.itens, 'categoria').grupos);
   const gSub = C.rankingValor(C.agrupar(D, S.itens, 'subcategoria').grupos).slice(0, 12);
   const gLug = C.rankingValor(C.agrupar(D, S.itens, 'favorecido').grupos).slice(0, 10);
@@ -101,6 +101,6 @@ export function RelatorioAnalise({ D, P, f, mes, hoje, perfil, filtrosTxt }) {
       : html`<p>Nenhum cartão cadastrado.</p>`}
     </section>
 
-    <footer class="rp-rodape">Compras no cartão contam no mês em que foram feitas; o pagamento da fatura não é contado de novo. Transferências entre contas não entram como receita nem como gasto. Somente lançamentos realizados.</footer>
+    <footer class="rp-rodape">Só entra o que já foi pago ou recebido. Compras no cartão entram (na data da compra) depois que a fatura delas é paga; o pagamento da fatura não é contado de novo. Transferências entre contas não entram como receita nem como gasto.</footer>
   </div>`;
 }

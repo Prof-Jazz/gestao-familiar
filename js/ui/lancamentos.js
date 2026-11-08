@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, SeletorMes, Vazio, Sel, Campo, opcoesContas, opcoesCartoes, opcoesPessoas, opcoesCategorias, Autoria } from './comp.js';
-import { useStore, abrirForm, restaurarDaLixeira, apagarDefinitivo, confirmar, toast, nomeUsuario } from '../data/store.js';
+import { useStore, abrirForm, abrirPagarFatura, restaurarDaLixeira, apagarDefinitivo, confirmar, toast, nomeUsuario } from '../data/store.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
-import { brl, dataBR, primeiroDia, ultimoDia, dataHoraBR, MESES_NOMES, hoje } from '../lib/fmt.js';
+import { brl, dataBR, primeiroDia, ultimoDia, dataHoraBR, MESES_NOMES, hoje, nomeMesCap } from '../lib/fmt.js';
 import { exportarCSV, exportarXLSX } from '../lib/exportar.js';
 
 export const dataLista = (l) => (l.status === 'previsto' ? C.dataPrevista(l) : C.dataConsumo(l));
@@ -38,7 +38,10 @@ export function Lancamentos({ arg }) {
   }, [D, f, ini, fim, ordem, periodo]);
   const H = hoje();
   const doMes = (l) => dataLista(l) >= ini;
-  const realizados = useMemo(() => lista.filter((l) => l.status !== 'previsto' && doMes(l)), [lista]);
+  const cartaoPendente = (l) => l.cartao_id && (l.tipo === 'despesa' || l.tipo === 'reembolso') && l.status !== 'previsto' && !C.faturaQuitada(D, l);
+  const realizados = useMemo(() => lista.filter((l) => l.status !== 'previsto' && doMes(l) && !cartaoPendente(l)), [lista]);
+  // faturas de cartão ainda não pagas que vencem até o fim do período
+  const faturasAbertas = useMemo(() => C.faturasEmAberto(D, H, fim).filter((x) => !f.cartao_id || x.cartao.id === f.cartao_id), [D, fim, f.cartao_id]);
   const aPagar = useMemo(() => lista.filter((l) => l.status === 'previsto' && l.tipo === 'despesa').sort((a, b) => dataLista(a).localeCompare(dataLista(b))), [lista]);
   const aReceber = useMemo(() => lista.filter((l) => l.status === 'previsto' && l.tipo === 'receita').sort((a, b) => dataLista(a).localeCompare(dataLista(b))), [lista]);
   const visivel = visao === 'apagar' ? aPagar : visao === 'areceber' ? aReceber
@@ -96,7 +99,7 @@ export function Lancamentos({ arg }) {
   <div class="card">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
       ${[['todos', `Tudo · ${realizados.length}`, 'zero'], ['receitas', `Receitas ${brl(tot.rec)}`, 'pos'], ['despesas', `Despesas ${brl(tot.desp)}`, 'neg'],
-        ['apagar', `A pagar ${brl(soma(aPagar))} · ${aPagar.length}`, 'atn'], ...(aReceber.length ? [['areceber', `A receber ${brl(soma(aReceber))} · ${aReceber.length}`, 'pri']] : [])]
+        ['apagar', `A pagar ${brl(soma(aPagar) + faturasAbertas.reduce((t, x) => t + x.devido, 0))} · ${aPagar.length + faturasAbertas.length}`, 'atn'], ...(aReceber.length ? [['areceber', `A receber ${brl(soma(aReceber))} · ${aReceber.length}`, 'pri']] : [])]
         .map(([v, t, cor]) => html`<button type="button" class=${'pilula aba-pil ' + cor + (visao === v ? ' sel' : '')} aria-pressed=${visao === v} onClick=${() => setVisao(v)}>${t}</button>`)}
       ${(visao === 'todos' || visao === 'receitas' || visao === 'despesas') && html`<span style="font-size:13px">Saldo: <${Tom} v=${tot.rec - tot.desp} /></span>`}
       <span style="flex:1"></span>
@@ -105,8 +108,12 @@ export function Lancamentos({ arg }) {
     </div>
     <div style="font-size:12px;color:var(--txt3);margin-bottom:6px">${visao === 'apagar' ? 'Contas ainda não pagas até o fim do mês, inclusive as atrasadas. Toque numa conta para marcar como paga.'
       : visao === 'areceber' ? 'Receitas ainda não recebidas até o fim do mês.'
-      : 'Só o que já foi pago ou recebido. Contas futuras ficam em “A pagar”. Compras no cartão aparecem na data da compra.'}</div>
-    ${visivel.length === 0 ? html`<${Vazio} icone=${visao === 'apagar' ? 'check' : 'search'} titulo=${visao === 'apagar' ? 'Nenhuma conta a pagar' : 'Nenhum lançamento encontrado'} texto=${nFiltros ? 'Ajuste ou limpe os filtros para ver mais resultados.' : 'Não há lançamentos neste período.'} />`
+      : 'Só o que já foi pago ou recebido. Contas futuras e faturas de cartão ainda não pagas ficam em “A pagar”.'}</div>
+    ${visao === 'apagar' && faturasAbertas.length > 0 && html`<div class="dia-grupo"><span>Faturas de cartão</span></div><div class="lista">${faturasAbertas.map((x) => html`<div class="item">
+      <span class="cb" style=${`background:${x.cartao.cor}22;color:${x.cartao.cor}`}><${Icone} n=${x.cartao.icone || 'credit-card'} /></span>
+      <div class="meio"><div class="t1">Fatura ${x.cartao.nome} — ${nomeMesCap(x.fatura.slice(0, 7))}</div><div class="t2">Vence ${dataBR(x.vencimento)}${x.vencimento < H ? ' · atrasada' : x.status === 'aberta' ? ' · ainda aberta' : ''} · inclui parcelamentos, juros e compras no cartão</div></div>
+      <div class="dir" style="display:flex;gap:8px;align-items:center"><b class="num">${brl(x.devido)}</b><button class="btn verde peq" onClick=${() => abrirPagarFatura({ cartaoId: x.cartao.id, fatura: x.fatura })}><${Icone} n="check" /> Pagar fatura</button></div></div>`)}</div>`}
+    ${visivel.length === 0 && !(visao === 'apagar' && faturasAbertas.length) ? html`<${Vazio} icone=${visao === 'apagar' ? 'check' : 'search'} titulo=${visao === 'apagar' ? 'Nenhuma conta a pagar' : 'Nenhum lançamento encontrado'} texto=${nFiltros ? 'Ajuste ou limpe os filtros para ver mais resultados.' : 'Não há lançamentos neste período.'} />`
       : grupos.length ? grupos.map((g) => html`<div class="dia-grupo"><span>${rotDia(g.d)}${visao === 'apagar' && g.d < H ? ' · atrasada' : ''}</span></div><div class="lista">${g.ls.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} semData />`)}</div>`)
       : html`<div class="lista">${visivel.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} />`)}</div>`}
   </div>` : html`

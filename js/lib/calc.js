@@ -160,10 +160,26 @@ export function dataConsumo(l) {
  * Retorna { l, data, natureza, valor } com valor positivo; natureza:
  *  'receita' | 'despesa' | 'reembolso' (reduz despesa) | 'fatura' (só caixa).
  */
-export function itensBase(D, base, ini, fim, f = {}, { incluirPrevistos = false } = {}) {
+const _quitadas = new WeakMap();
+/** A fatura em que esta compra de cartão caiu já foi paga por completo? */
+export function faturaQuitada(D, l) {
+  if (!l.cartao_id || !l.fatura) return true;
+  let m = _quitadas.get(D); if (!m) { m = new Map(); _quitadas.set(D, m); }
+  const k = l.cartao_id + '|' + l.fatura;
+  if (!m.has(k)) {
+    const c = D.mapa.cartoes[l.cartao_id];
+    const r = c ? resumoFatura(D, c, l.fatura, '9999-12-31') : null;
+    m.set(k, !r || (r.aberto <= 0 && r.previstas <= 0));
+  }
+  return m.get(k);
+}
+
+export function itensBase(D, base, ini, fim, f = {}, { incluirPrevistos = false, soPagas = false } = {}) {
   const out = [];
   for (const l of vivos(D)) {
     if (l.status === 'cancelado') continue;
+    // soPagas: compra no cartão só conta depois que a fatura dela foi paga
+    if (soPagas && l.cartao_id && (l.tipo === 'despesa' || l.tipo === 'reembolso') && !faturaQuitada(D, l)) continue;
     if (l.ajuste_inicial) continue; // saldo anterior de cartão: conta na fatura/limite, não é gasto do período
     if (l.status === 'previsto' && !incluirPrevistos) continue;
     if (!passaFiltro(l, f, D)) continue;
