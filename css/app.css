@@ -455,3 +455,7 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 /* saldo disponível: valor sempre na mesma linha do R$ */
 .kpi.destaque .tom { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: clamp(20px, 2.1vw, 30px); }
 .kpi.destaque .tom .sim { font-size: .6em; }
+/* valores dos cartões do painel nunca quebram linha entre R$ e o número */
+.kpi .val, .kpi .val .tom { white-space: nowrap; }
+.kpi .val { font-size: clamp(18px, 1.9vw, 25px); }
+.kpi .val .tom { display: inline-flex; align-items: center; gap: 4px; }
