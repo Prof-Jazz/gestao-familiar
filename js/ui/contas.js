@@ -85,7 +85,7 @@ function Cartao({ c, D, H, editar, saldoAnterior }) {
     return ids.map((id) => ({ id, ...C.restanteCompra(D, id, H) })).filter((x) => x.restante > 0);
   }, [D, c]);
   const titular = D.mapa.pessoas[c.titular_id]?.nome;
-  const catJuros = D.categorias.find((x) => x.nome === 'Tributos e serviços financeiros' && !x.parent_id);
+  const catJuros = D.categorias.find((x) => (x.nome === 'Tributos e serviços financeiros' || /^Empréstimos, Tributos/.test(x.nome)) && !x.parent_id);
   const subJuros = D.categorias.find((x) => x.parent_id === catJuros?.id && /encargos|juros/i.test(x.nome));
   const pctLim = c.limite_centavos ? (lim.comprometido / c.limite_centavos) * 100 : 0;
 

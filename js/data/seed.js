@@ -16,7 +16,7 @@ export const CATEGORIAS_INICIAIS = [
   ['despesa', 'Presentes e comemorações', 'gift', '#FB7185', 'Aniversários=cake|Presentes=gift|Festas=party-popper'],
   ['despesa', 'Contribuições e doações', 'hand-heart', '#CA8A04', 'Dízimos=church|Ofertas=hand-coins|Doações=heart-handshake|Ações solidárias=hand-heart'],
   ['despesa', 'Pets', 'paw-print', '#92400E', 'Alimentação=bone|Veterinário=stethoscope|Cuidados=paw-print'],
-  ['despesa', 'Tributos e serviços financeiros', 'file-text', '#64748B', 'Impostos=landmark|Tarifas=receipt|Juros=percent|Encargos de cartão=credit-card'],
+  ['despesa', 'Empréstimos, Tributos e Serviços Financeiros', 'file-text', '#64748B', 'Empréstimos=hand-coins|Impostos=landmark|Tarifas=receipt|Juros=percent|Encargos de cartão=credit-card'],
   ['despesa', 'Outros', 'ellipsis', '#9CA3AF', ''],
   ['receita', 'Salários', 'briefcase', '#059669', ''],
   ['receita', 'Aulas particulares', 'presentation', '#0891B2', ''],
