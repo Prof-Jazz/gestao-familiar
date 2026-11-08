@@ -15,6 +15,8 @@ const optsEixo = (extra = {}) => ({ interaction: { mode: 'index', intersect: fal
 export function periodoDe(preset, mes, livre) {
   const H = hoje();
   switch (preset) {
+    case 'atual': { const ym = H.slice(0, 7); return { ini: primeiroDia(ym), fim: ultimoDia(ym), rot: 'Mês atual — ' + nomeMesCap(ym) }; }
+    case 'anterior': { const ym = addMesYM(H.slice(0, 7), -1); return { ini: primeiroDia(ym), fim: ultimoDia(ym), rot: 'Mês anterior — ' + nomeMesCap(ym) }; }
     case 'mes': return { ini: primeiroDia(mes), fim: ultimoDia(mes), rot: nomeMesCap(mes) };
     case '3m': return { ini: primeiroDia(addMesYM(mes, -2)), fim: ultimoDia(mes), rot: 'Últimos 3 meses' };
     case '6m': return { ini: primeiroDia(addMesYM(mes, -5)), fim: ultimoDia(mes), rot: 'Últimos 6 meses' };
@@ -48,7 +50,7 @@ export function Analises() {
   const [verFiltros, setVerFiltros] = useState(false);
   const set = (p) => setF((x) => { const n = { ...x, ...p }; for (const k in n) if (!n[k]) delete n[k]; return n; });
   const P = periodoDe(preset, mes, livre);
-  const mudarPreset = (v) => { setPreset(v); setGran(v === 'mes' || v === 'livre' ? 'dia' : 'mes'); };
+  const mudarPreset = (v) => { setPreset(v); setGran(['mes', 'atual', 'anterior', 'livre'].includes(v) ? 'dia' : 'mes'); };
   const PA = periodoAnterior(P);
   const H = hoje();
 
@@ -112,7 +114,7 @@ export function Analises() {
 
   <div class="card" style="margin-bottom:16px">
     <div class="filtros">
-      <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${mudarPreset} opcoes=${[{ v: 'mes', r: 'Mês selecionado' }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
+      <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${mudarPreset} opcoes=${[{ v: 'atual', r: 'Mês atual' }, { v: 'anterior', r: 'Mês anterior' }, { v: 'mes', r: `Mês do topo (${nomeMesCap(mes)})` }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
       ${preset === 'livre' && html`<${Campo} rot="De"><input class="inp" type="date" value=${livre.ini} onInput=${(e) => setLivre({ ...livre, ini: e.target.value })} /></${Campo}>
         <${Campo} rot="Até"><input class="inp" type="date" value=${livre.fim} onInput=${(e) => setLivre({ ...livre, fim: e.target.value })} /></${Campo}>`}
       <button class="btn sec" onClick=${() => setVerFiltros(!verFiltros)}><${Icone} n="filter" /> Filtros${Object.keys(f).length ? ` (${Object.keys(f).length})` : ''}</button>
