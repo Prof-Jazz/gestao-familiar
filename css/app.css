@@ -459,3 +459,4 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .kpi .val, .kpi .val .tom { white-space: nowrap; }
 .kpi .val { font-size: clamp(18px, 1.9vw, 25px); }
 .kpi .val .tom { display: inline-flex; align-items: center; gap: 4px; }
+.kpi.destaque .tom { padding: 6px 18px 6px 14px; gap: 8px; justify-content: center; font-size: clamp(18px, 1.75vw, 27px); box-sizing: border-box; overflow: visible; }
