@@ -36,13 +36,14 @@ export function periodoAnterior({ ini, fim }) {
 }
 
 export function Analises() {
-  const { D, mes, perfil } = useStore();
+  const { D, perfil } = useStore();
+  const mes = hoje().slice(0, 7); // Análises sempre partem do mês atual
   const [imprimindo, setImprimindo] = useState(false);
   const base = 'consumo'; // gastos no mês em que aconteceram (cartão conta na data da compra)
-  const [preset, setPreset] = useState('6m');
+  const [preset, setPreset] = useState('atual');
   const [livre, setLivre] = useState({ ini: primeiroDia(mes), fim: ultimoDia(mes) });
   const [f, setF] = useState({});
-  const [gran, setGran] = useState('mes');
+  const [gran, setGran] = useState('dia');
   const [tipoEv, setTipoEv] = useState('gastos');
   const [cats, setCats] = useState([]);
   const [dimRank, setDimRank] = useState('categoria');
@@ -114,7 +115,7 @@ export function Analises() {
 
   <div class="card" style="margin-bottom:16px">
     <div class="filtros">
-      <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${mudarPreset} opcoes=${[{ v: 'atual', r: 'Mês atual' }, { v: 'anterior', r: 'Mês anterior' }, { v: 'mes', r: `Mês do topo (${nomeMesCap(mes)})` }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
+      <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${mudarPreset} opcoes=${[{ v: 'atual', r: 'Mês atual' }, { v: 'anterior', r: 'Mês anterior' }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
       ${preset === 'livre' && html`<${Campo} rot="De"><input class="inp" type="date" value=${livre.ini} onInput=${(e) => setLivre({ ...livre, ini: e.target.value })} /></${Campo}>
         <${Campo} rot="Até"><input class="inp" type="date" value=${livre.fim} onInput=${(e) => setLivre({ ...livre, fim: e.target.value })} /></${Campo}>`}
       <button class="btn sec" onClick=${() => setVerFiltros(!verFiltros)}><${Icone} n="filter" /> Filtros${Object.keys(f).length ? ` (${Object.keys(f).length})` : ''}</button>
@@ -194,7 +195,7 @@ export function Analises() {
             { label: 'Realizado', data: r.orc.linhas.filter((l) => l.orcado != null).map((l) => l.gasto / 100), backgroundColor: r.orc.linhas.filter((l) => l.orcado != null).map((l) => (l.nivel === 'estourado' ? '#D1343E' : l.nivel === 'atencao' ? '#F59E0B' : l.categoria.cor)), borderRadius: 6 }] },
           options: { ...optsEixo(), indexAxis: 'y', scales: { x: { ticks: { callback: fmtEixo } }, y: { grid: { display: false } } } } }} />`
         : html`<${Vazio} icone="target" titulo="Nenhum limite por categoria definido"><a class="btn sec peq" href="#/orcamento">Definir orçamento</a></${Vazio}>`}
-      <div style="font-size:12px;color:var(--txt3)">Usa o mês selecionado no topo (${nomeMesCap(mes)}) e não depende do período acima.</div>
+      <div style="font-size:12px;color:var(--txt3)">Sempre do mês atual (${nomeMesCap(mes)}).</div>
     </div>
     <div class="card"><h3><${Icone} n="trending-up" /> Evolução do saldo <span class="acao"><span class="base-tag">Saldo das contas</span></span></h3>
       <${Grafico} chave=${'sd' + D.lancamentos.length + r.saldo.length + P.ini} altura=${300} rotulo="Evolução do saldo realizado e projetado" cfg=${{ type: 'line',
@@ -297,7 +298,7 @@ function Comparacao3({ tres }) {
       <tbody>${linhas.map(([rot, k, inv]) => html`<tr><td><b>${rot}</b></td>${tres.map((t, i) => html`<td class="r">
         <div class="num" style=${`font-weight:${i === 2 ? 800 : 600};color:${k === 'receitas' ? 'var(--pos)' : k === 'despesas' ? 'var(--neg)' : t[k] < 0 ? 'var(--neg)' : 'var(--txt)'}`}>${brl(t[k])}</div>
         ${i > 0 && html`<div style="margin-top:2px"><${Variacao} v=${variacao(t[k], tres[i - 1][k])} inverso=${inv} /></div>`}</td>`)}</tr>`)}</tbody></table></div>
-    <div style="font-size:12px;color:var(--txt3);margin-top:6px">As setas comparam cada mês com o mês anterior a ele. Mude o mês no topo da tela para comparar outros meses.</div>
+    <div style="font-size:12px;color:var(--txt3);margin-top:6px">As setas comparam cada mês com o mês anterior a ele.</div>
   </div>`;
 }
 
