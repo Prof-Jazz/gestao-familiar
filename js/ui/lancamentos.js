@@ -3,7 +3,7 @@ import { html, Icone, CatIcone, Tom, SeletorMes, Vazio, Sel, Campo, opcoesContas
 import { useStore, abrirForm, restaurarDaLixeira, apagarDefinitivo, confirmar, toast, nomeUsuario } from '../data/store.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
-import { brl, dataBR, primeiroDia, ultimoDia, dataHoraBR, MESES_NOMES } from '../lib/fmt.js';
+import { brl, dataBR, primeiroDia, ultimoDia, dataHoraBR, MESES_NOMES, hoje } from '../lib/fmt.js';
 import { exportarCSV, exportarXLSX } from '../lib/exportar.js';
 
 export const dataLista = (l) => (l.status === 'previsto' ? C.dataPrevista(l) : C.dataConsumo(l));
@@ -19,6 +19,7 @@ function filtrosDaRota(arg) {
 export function Lancamentos({ arg }) {
   const { D, mes } = useStore();
   const [aba, setAba] = useState('lista');
+  const [visao, setVisao] = useState('todos'); // todos | receitas | despesas | apagar | areceber
   const [f, setF] = useState(() => filtrosDaRota(arg));
   const [periodo, setPeriodo] = useState(() => { const p = new URLSearchParams(arg || ''); return p.get('ini') ? { ini: p.get('ini'), fim: p.get('fim') } : null; });
   const [ordem, setOrdem] = useState('data_desc');
@@ -29,28 +30,36 @@ export function Lancamentos({ arg }) {
 
   const lista = useMemo(() => {
     const filtrosCalc = { ...f }; delete filtrosCalc.base;
-    let arr = C.vivos(D).filter((l) => { const d = dataLista(l); return d >= ini && d <= fim && C.passaFiltro(l, filtrosCalc, D); });
+    let arr = C.vivos(D).filter((l) => { const d = dataLista(l); return d <= fim && (d >= ini || (l.status === 'previsto' && !periodo)) && C.passaFiltro(l, filtrosCalc, D); });
     const [campo, dir] = ordem.split('_'); const s = dir === 'asc' ? 1 : -1;
     arr.sort((a, b) => campo === 'valor' ? s * (a.valor_centavos - b.valor_centavos) : campo === 'desc' ? a.descricao.localeCompare(b.descricao, 'pt-BR')
       : s * (dataLista(a).localeCompare(dataLista(b)) || String(a.criado_em).localeCompare(String(b.criado_em))));
     return arr;
-  }, [D, f, ini, fim, ordem]);
+  }, [D, f, ini, fim, ordem, periodo]);
+  const H = hoje();
+  const doMes = (l) => dataLista(l) >= ini;
+  const realizados = useMemo(() => lista.filter((l) => l.status !== 'previsto' && doMes(l)), [lista]);
+  const aPagar = useMemo(() => lista.filter((l) => l.status === 'previsto' && l.tipo === 'despesa').sort((a, b) => dataLista(a).localeCompare(dataLista(b))), [lista]);
+  const aReceber = useMemo(() => lista.filter((l) => l.status === 'previsto' && l.tipo === 'receita').sort((a, b) => dataLista(a).localeCompare(dataLista(b))), [lista]);
+  const visivel = visao === 'apagar' ? aPagar : visao === 'areceber' ? aReceber
+    : visao === 'receitas' ? realizados.filter((l) => l.tipo === 'receita') : visao === 'despesas' ? realizados.filter((l) => l.tipo === 'despesa' || l.tipo === 'reembolso') : realizados;
+  const soma = (arr) => arr.reduce((t, l) => t + l.valor_centavos, 0);
   const tot = useMemo(() => {
     let rec = 0, desp = 0;
-    for (const l of lista) {
+    for (const l of realizados) {
       if (l.status === 'cancelado' || l.ajuste_inicial) continue;
       if (l.tipo === 'receita') rec += l.valor_centavos;
       else if (l.tipo === 'despesa') desp += l.valor_centavos;
       else if (l.tipo === 'reembolso') desp -= l.valor_centavos;
     }
     return { rec, desp };
-  }, [lista]);
+  }, [realizados]);
   const lixeira = useMemo(() => D.lancamentos.filter((l) => l.excluido_em).sort((a, b) => b.excluido_em.localeCompare(a.excluido_em)), [D]);
   const subs = f.categoria_id ? D.categorias.filter((c) => c.parent_id === f.categoria_id).map((c) => ({ v: c.id, r: c.nome })) : [];
   const nFiltros = Object.keys(f).length;
 
   const grupos = [];
-  if (ordem.startsWith('data')) for (const l of lista) { const d = dataLista(l); const g = grupos.at(-1); if (g?.d === d) g.ls.push(l); else grupos.push({ d, ls: [l] }); }
+  if (ordem.startsWith('data')) for (const l of visivel) { const d = dataLista(l); const g = grupos.at(-1); if (g?.d === d) g.ls.push(l); else grupos.push({ d, ls: [l] }); }
 
   return html`
   <div class="topo"><div><h2>Lançamentos</h2><div class="sub">Receitas, despesas e transferências da família</div></div><span class="esp"></span>
@@ -86,17 +95,20 @@ export function Lancamentos({ arg }) {
 
   <div class="card">
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
-      <span class="pilula zero">${lista.length} lançamento(s)</span>
-      <span class="pilula pos">Receitas ${brl(tot.rec)}</span><span class="pilula neg">Despesas ${brl(tot.desp)}</span>
-      <span style="font-size:13px">Saldo do filtro: <${Tom} v=${tot.rec - tot.desp} /></span>
+      ${[['todos', `Tudo · ${realizados.length}`, 'zero'], ['receitas', `Receitas ${brl(tot.rec)}`, 'pos'], ['despesas', `Despesas ${brl(tot.desp)}`, 'neg'],
+        ['apagar', `A pagar ${brl(soma(aPagar))} · ${aPagar.length}`, 'atn'], ...(aReceber.length ? [['areceber', `A receber ${brl(soma(aReceber))} · ${aReceber.length}`, 'pri']] : [])]
+        .map(([v, t, cor]) => html`<button type="button" class=${'pilula aba-pil ' + cor + (visao === v ? ' sel' : '')} aria-pressed=${visao === v} onClick=${() => setVisao(v)}>${t}</button>`)}
+      ${(visao === 'todos' || visao === 'receitas' || visao === 'despesas') && html`<span style="font-size:13px">Saldo: <${Tom} v=${tot.rec - tot.desp} /></span>`}
       <span style="flex:1"></span>
-      <button class="btn sec peq" onClick=${() => exportarCSV(D, lista) || toast('Nada para exportar.', 'erro')}><${Icone} n="download" /> CSV</button>
-      <button class="btn sec peq" onClick=${() => exportarXLSX(D, lista) || toast('Nada para exportar.', 'erro')}><${Icone} n="file-spreadsheet" /> Excel</button>
+      <button class="btn sec peq" onClick=${() => exportarCSV(D, visivel) || toast('Nada para exportar.', 'erro')}><${Icone} n="download" /> CSV</button>
+      <button class="btn sec peq" onClick=${() => exportarXLSX(D, visivel) || toast('Nada para exportar.', 'erro')}><${Icone} n="file-spreadsheet" /> Excel</button>
     </div>
-    <div style="font-size:12px;color:var(--txt3);margin-bottom:6px">Totais da lista incluem previstos (exceto cancelados); transferências e pagamentos de fatura não entram em receitas/despesas. Compras parceladas aparecem no mês de cada parcela.</div>
-    ${lista.length === 0 ? html`<${Vazio} icone="search" titulo="Nenhum lançamento encontrado" texto=${nFiltros ? 'Ajuste ou limpe os filtros para ver mais resultados.' : 'Não há lançamentos neste período.'} />`
-      : grupos.length ? grupos.map((g) => html`<div class="dia-grupo"><span>${rotDia(g.d)}</span></div><div class="lista">${g.ls.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} semData />`)}</div>`)
-      : html`<div class="lista">${lista.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} />`)}</div>`}
+    <div style="font-size:12px;color:var(--txt3);margin-bottom:6px">${visao === 'apagar' ? 'Contas ainda não pagas até o fim do mês, inclusive as atrasadas. Toque numa conta para marcar como paga.'
+      : visao === 'areceber' ? 'Receitas ainda não recebidas até o fim do mês.'
+      : 'Só o que já foi pago ou recebido. Contas futuras ficam em “A pagar”. Compras no cartão aparecem na data da compra.'}</div>
+    ${visivel.length === 0 ? html`<${Vazio} icone=${visao === 'apagar' ? 'check' : 'search'} titulo=${visao === 'apagar' ? 'Nenhuma conta a pagar' : 'Nenhum lançamento encontrado'} texto=${nFiltros ? 'Ajuste ou limpe os filtros para ver mais resultados.' : 'Não há lançamentos neste período.'} />`
+      : grupos.length ? grupos.map((g) => html`<div class="dia-grupo"><span>${rotDia(g.d)}${visao === 'apagar' && g.d < H ? ' · atrasada' : ''}</span></div><div class="lista">${g.ls.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} semData />`)}</div>`)
+      : html`<div class="lista">${visivel.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} />`)}</div>`}
   </div>` : html`
   <div class="card"><h3><${Icone} n="trash-2" /> Lixeira</h3><div class="card-sub">Itens na lixeira não entram em saldos, gráficos nem relatórios. Restaure ou apague de vez.</div>
     ${lixeira.length === 0 ? html`<${Vazio} icone="trash-2" titulo="Lixeira vazia" />` : html`<div class="lista">${lixeira.map((l) => html`<div class="item">

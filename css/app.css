@@ -449,3 +449,6 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .rp-pontos ul { margin: 0; padding-left: 16px; } .rp-pontos li { margin-bottom: 3px; } .rp-pontos h3 { margin-top: 0; }
 .rp-rodape { margin-top: 14px; border-top: 1px solid #E5E7EB; padding-top: 6px; color: #6B7280; font-size: 9.5px; }
 @media print { .relatorio-pdf * { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+
+.aba-pil { cursor: pointer; border: 2px solid transparent; font: inherit; font-weight: 700; }
+.aba-pil.sel { border-color: currentColor; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
