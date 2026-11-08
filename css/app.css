@@ -452,3 +452,6 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 
 .aba-pil { cursor: pointer; border: 2px solid transparent; font: inherit; font-weight: 700; }
 .aba-pil.sel { border-color: currentColor; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+/* saldo disponível: valor sempre na mesma linha do R$ */
+.kpi.destaque .tom { white-space: nowrap; display: inline-flex; align-items: center; gap: 6px; max-width: 100%; font-size: clamp(20px, 2.1vw, 30px); }
+.kpi.destaque .tom .sim { font-size: .6em; }
