@@ -38,6 +38,7 @@ export const LOGOS = [
   { id: 'icloud', nome: 'iCloud', cor: '#3D8BF2', chaves: ['icloud'] },
   { id: 'capcut', nome: 'CapCut', cor: '#000000', chaves: ['capcut'] },
   { id: 'canva', nome: 'Canva', cor: '#00C4CC', chaves: ['canva'] },
+  { id: 'microsoft-365', nome: 'Microsoft 365', cor: '#F25022', chaves: ['microsoft', 'office', 'office 365', 'microsoft 365'] },
   { id: 'hbo-max', nome: 'HBO Max', cor: '#7B2FE0', chaves: ['hbo', 'max'] },
   { id: 'youtube', nome: 'YouTube', cor: '#FF0000', chaves: ['youtube'] },
   { id: 'chatgpt', nome: 'ChatGPT', cor: '#10A37F', chaves: ['chatgpt', 'openai'] },
