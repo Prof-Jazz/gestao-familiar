@@ -460,3 +460,11 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .kpi .val { font-size: clamp(18px, 1.9vw, 25px); }
 .kpi .val .tom { display: inline-flex; align-items: center; gap: 4px; }
 .kpi.destaque .tom { padding: 6px 18px 6px 14px; gap: 8px; justify-content: center; font-size: clamp(18px, 1.75vw, 27px); box-sizing: border-box; overflow: visible; }
+/* linha única de categorias com rolagem horizontal */
+.chips.chips-scroll { flex-wrap: nowrap; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding: 2px 2px 8px;
+  scrollbar-width: thin; -webkit-overflow-scrolling: touch;
+  mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent 100%);
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 14px, #000 calc(100% - 28px), transparent 100%); }
+.chips.chips-scroll .chip { flex: none; white-space: nowrap; scroll-snap-align: start; }
+.chips.chips-scroll::-webkit-scrollbar { height: 6px; }
+.chips.chips-scroll::-webkit-scrollbar-thumb { background: #D5D8E5; border-radius: 99px; }
