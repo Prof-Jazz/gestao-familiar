@@ -182,9 +182,8 @@ export function Analises() {
     </div>
   </div>
 
-  <div class="grade g-2" style="margin-bottom:16px">
+  <div class="grade" style="margin-bottom:16px">
     <${Ranking} titulo="Ranking por valor gasto" grupos=${C.rankingValor(r.rank.grupos)} base=${base} dim=${dimRank} setDim=${setDimRank} abrir=${setFatia} principal="valor" />
-    <${Ranking} titulo="Ranking por frequência" grupos=${C.rankingFrequencia(r.rank.grupos)} base=${base} dim=${dimRank} setDim=${setDimRank} abrir=${setFatia} principal="qtd" />
   </div>`}
 
   <div class="grade g-2">
