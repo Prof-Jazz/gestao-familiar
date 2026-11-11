@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, Base, Vazio, Sel, Campo, Grafico, Modal, opcoesContas, opcoesPessoas, opcoesCategorias } from './comp.js';
 import { useStore, toast } from '../data/store.js';
 import { RelatorioAnalise } from './relatorio-analise.js';
@@ -156,9 +156,7 @@ export function Analises() {
         : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), backgroundColor: '#E11D48', borderRadius: 6, maxBarThickness: 46 }] },
       options: optsEixo({ plugins: { legend: { display: cats.length > 1 }, tooltip: { callbacks: { label: tip } } } }) }} />
     <div class="ev-total">Total ${tipoEv === 'gastos' ? 'gasto' : 'recebido'} no período: <b class="num">${brl(tipoEv === 'gastos' ? r.tot.despesas : r.tot.receitas)}</b></div>
-    ${tipoEv === 'gastos' && html`<div style="font-size:12.5px;color:var(--txt3);margin:12px 0 6px">Ver só uma categoria (toque para escolher):</div>
-    <div class="chips chips-scroll" style="margin-bottom:10px" role="group" aria-label="Escolher categoria">${catsDesp.map((c) => html`<button class=${'chip' + (cats.includes(c.id) ? ' on' : '')} style=${cats.includes(c.id) ? `background:${c.cor};border-color:${c.cor}` : ''}
-      onClick=${() => setCats(cats.includes(c.id) ? cats.filter((x) => x !== c.id) : [...cats, c.id])}><${Icone} n=${c.icone} />${c.nome}</button>`)}</div>`}
+    ${tipoEv === 'gastos' && html`<div style="margin:12px 0 10px"><${MenuCategoria} lista=${catsDesp} valor=${cats[0] || null} onChange=${(id) => setCats(id ? [id] : [])} /></div>`}
     ${tipoEv === 'gastos' && (cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
     ${tipoEv === 'receitas' && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
   </div>
@@ -332,5 +330,31 @@ function DetalheReceitas({ D, itens, abrir }) {
       <${Lista} titulo="De onde veio" grupos=${origens} icone="building-2" />
       <${Lista} titulo="Por categoria" grupos=${porCat} icone="tag" />
     </div>
+  </div>`;
+}
+
+/** Menu suspenso de categorias: clique na seta, a lista desce, escolha uma. */
+function MenuCategoria({ lista, valor, onChange }) {
+  const [aberto, setAberto] = useState(false);
+  const ref = useRef();
+  useEffect(() => {
+    if (!aberto) return;
+    const fora = (e) => { if (ref.current && !ref.current.contains(e.target)) setAberto(false); };
+    const esc = (e) => { if (e.key === 'Escape') setAberto(false); };
+    document.addEventListener('pointerdown', fora); document.addEventListener('keydown', esc);
+    return () => { document.removeEventListener('pointerdown', fora); document.removeEventListener('keydown', esc); };
+  }, [aberto]);
+  const sel = lista.find((c) => c.id === valor);
+  const escolher = (id) => { onChange(id); setAberto(false); };
+  return html`<div class="menu-cat" ref=${ref}>
+    <button type="button" class=${'menu-cat-btn' + (aberto ? ' aberto' : '')} aria-haspopup="listbox" aria-expanded=${aberto} onClick=${() => setAberto(!aberto)}>
+      ${sel ? html`<${CatIcone} p cor=${sel.cor} icone=${sel.icone} /><span>${sel.nome}</span>` : html`<${Icone} n="tag" /><span>Selecione a categoria</span>`}
+      <span class="menu-cat-seta"><${Icone} n="chevron-down" /></span></button>
+    ${aberto && html`<div class="menu-cat-lista" role="listbox">
+      <button type="button" role="option" aria-selected=${!valor} class=${'menu-cat-op' + (!valor ? ' on' : '')} onClick=${() => escolher(null)}>
+        <${Icone} n="list" /><span>Todas as categorias</span>${!valor && html`<${Icone} n="check" />`}</button>
+      ${lista.map((c) => html`<button type="button" role="option" aria-selected=${valor === c.id} class=${'menu-cat-op' + (valor === c.id ? ' on' : '')} onClick=${() => escolher(c.id)}>
+        <${CatIcone} p cor=${c.cor} icone=${c.icone} /><span>${c.nome}</span>${valor === c.id && html`<${Icone} n="check" />`}</button>`)}
+    </div>`}
   </div>`;
 }
