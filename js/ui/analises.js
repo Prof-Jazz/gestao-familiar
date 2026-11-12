@@ -3,6 +3,8 @@ import { html, Icone, CatIcone, Tom, Base, Vazio, Sel, Campo, Grafico, Modal, op
 import { useStore, toast } from '../data/store.js';
 import { RelatorioAnalise } from './relatorio-analise.js';
 import { corTema } from '../lib/tema.js';
+import { saudeFinanceira } from '../lib/saude.js';
+import { KpiDash, Var, BarrasMeta, RoscaDestaque, Empilhadas, TabelaComparativa, Alertas, montarAlertas, FaixaResumo, ArvoreCategorias } from './analises-dash.js';
 import { exportarCSV, exportarXLSX } from '../lib/exportar.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
@@ -77,7 +79,16 @@ export function Analises() {
     // saldo
     const ymIni = P.ini.slice(0, 7); const ymFim = addMesYM(H.slice(0, 7), 6) > P.fim.slice(0, 7) ? addMesYM(H.slice(0, 7), 6) : P.fim.slice(0, 7);
     const saldo = C.serieSaldo(D, ymIni, ymFim, H);
-    return { tres, serieRec, itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
+    const saude = saudeFinanceira(D, P.ini, P.fim, H, f);
+    const orcPorCat = Object.fromEntries(orc.linhas.filter((l) => l.orcado != null).map((l) => [l.categoria.id, l.orcado]));
+    const porCatA = C.agrupar(D, itensA, 'categoria');
+    const contasAtrasadas = C.vivos(D).filter((l) => l.status === 'previsto' && l.tipo === 'despesa' && C.dataPrevista(l) < H);
+    const alertas = montarAlertas({ D, H, g: porCat, gA: porCatA, orcPorCat, saude, contasAtrasadas });
+    const maior = itens.filter((it) => C.valorDespesa(it) > 0).sort((a, b) => b.valor - a.valor)[0];
+    const mapaA = Object.fromEntries(porCatA.grupos.map((x) => [x.chave, x.valor]));
+    const cresceu = porCat.grupos.map((x) => ({ x, d: x.valor - (mapaA[x.chave] || 0) })).sort((a, b) => b.d - a.d)[0];
+    const proj = C.projecaoFimMes(D, H.slice(0, 7), H);
+    return { saude, orcPorCat, porCatA, alertas, maior, cresceu, proj, tres, serieRec, itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
   }, [D, base, P.ini, P.fim, f, gran, cats.join(), dimRank, mes]);
 
   const rotSerie = (k) => (gran === 'mes' ? mesCurto(k) : dataBR(k).slice(0, 5));
@@ -114,14 +125,14 @@ export function Analises() {
       <button class="btn sec" onClick=${() => exportarCSV(D, lancsPeriodo(), nomeArq + '.csv') || toast('Nada para exportar.', 'erro')}><${Icone} n="download" /> CSV</button>
       <button class="btn sec" onClick=${excelAnalise}><${Icone} n="file-spreadsheet" /> Excel</button></div></div>
 
-  <div class="card" style="margin-bottom:16px">
-    <div class="filtros">
+  <div class="dash-barra">
       <${Campo} rot="Período"><${Sel} valor=${preset} onChange=${mudarPreset} opcoes=${[{ v: 'atual', r: 'Mês atual' }, { v: 'anterior', r: 'Mês anterior' }, { v: '3m', r: 'Últimos 3 meses' }, { v: '6m', r: 'Últimos 6 meses' }, { v: '12m', r: 'Últimos 12 meses' }, { v: 'ano', r: 'Ano inteiro' }, { v: 'livre', r: 'Personalizado' }]} /></${Campo}>
       ${preset === 'livre' && html`<${Campo} rot="De"><input class="inp" type="date" value=${livre.ini} onInput=${(e) => setLivre({ ...livre, ini: e.target.value })} /></${Campo}>
         <${Campo} rot="Até"><input class="inp" type="date" value=${livre.fim} onInput=${(e) => setLivre({ ...livre, fim: e.target.value })} /></${Campo}>`}
-      <button class="btn sec" onClick=${() => setVerFiltros(!verFiltros)}><${Icone} n="filter" /> Filtros${Object.keys(f).length ? ` (${Object.keys(f).length})` : ''}</button>
-    </div>
-    ${verFiltros && html`<div class="filtros" style="margin-top:12px">
+      <button class="btn sec" style="align-self:flex-end" onClick=${() => setVerFiltros(!verFiltros)}><${Icone} n="filter" /> Filtros${Object.keys(f).length ? ` (${Object.keys(f).length})` : ''}</button>
+      <span class="dash-nota">Só entra o que já foi pago. Compras no cartão entram depois que a fatura é paga; transferências não entram.</span>
+  </div>
+    ${verFiltros && html`<div class="card filtros" style="margin-bottom:16px">
       <${Campo} rot="Categoria"><${Sel} valor=${f.categoria_id} onChange=${(v) => set({ categoria_id: v, subcategoria_id: null })} vazio="Todas" opcoes=${[...opcoesCategorias(D, 'despesa', { arquivadas: true }), ...opcoesCategorias(D, 'receita', { arquivadas: true })]} /></${Campo}>
       ${subs.length > 0 && html`<${Campo} rot="Subcategoria"><${Sel} valor=${f.subcategoria_id} onChange=${(v) => set({ subcategoria_id: v })} vazio="Todas" opcoes=${subs} /></${Campo}>`}
       <${Campo} rot="Conta"><${Sel} valor=${f.conta_id} onChange=${(v) => set({ conta_id: v })} vazio="Todas" opcoes=${opcoesContas(D, { incluirArquivadas: true })} /></${Campo}>
@@ -131,19 +142,32 @@ export function Analises() {
       <${Campo} rot="Projeto"><${Sel} valor=${f.projeto_id} onChange=${(v) => set({ projeto_id: v })} vazio="Todos" opcoes=${D.projetos.map((p) => ({ v: p.id, r: p.nome }))} /></${Campo}>
       <button class="btn fantasma" onClick=${() => setF({})}><${Icone} n="x" /> Limpar</button>
     </div>`}
-    <div style="margin-top:10px;font-size:12.5px;color:var(--txt3)">Só entra o que já foi pago. Compras no cartão entram (na data da compra) depois que a fatura delas for paga; o pagamento da fatura não conta de novo. Transferências entre contas não entram.</div>
+
+  <div class="kpis-dash" style="margin-bottom:16px">
+    <${KpiDash} rot="Receitas" icone="arrow-down-left" cor="#22C55E" destaqueCor="var(--pos)" valor=${brl(r.tot.receitas)} rodape=${html`<${Var} v=${vRec} />`} />
+    <${KpiDash} rot="Gastos" icone="arrow-up-right" cor="#F43F5E" destaqueCor="var(--neg)" valor=${brl(r.tot.despesas)} rodape=${html`<${Var} v=${vDesp} inverso />`} />
+    <${KpiDash} rot=${r.tot.resultado >= 0 ? 'Sobrou' : 'Faltou'} anel=${r.tot.receitas ? Math.max(0, (r.tot.resultado / r.tot.receitas) * 100) : 0} cor=${r.tot.resultado >= 0 ? '#22C55E' : '#F43F5E'}
+      destaqueCor=${r.tot.resultado >= 0 ? 'var(--pos)' : 'var(--neg)'} valor=${brl(Math.abs(r.tot.resultado))} rodape="da renda ficou guardada" />
+    <${KpiDash} rot="Renda já gasta" anel=${r.tot.receitas ? (r.tot.despesas / r.tot.receitas) * 100 : 0} cor=${r.tot.despesas > r.tot.receitas ? '#F43F5E' : '#3B82F6'}
+      valor=${r.tot.receitas ? (Math.round((r.tot.despesas / r.tot.receitas) * 100) + '%') : '—'} rodape="dos gastos sobre as receitas" />
+    <${KpiDash} rot="Limite dos cartões" anel=${r.saude.limTot ? (r.saude.usado / r.saude.limTot) * 100 : 0} cor=${r.saude.usado > r.saude.limTot ? '#F43F5E' : r.saude.usado > r.saude.limTot * 0.6 ? '#F59E0B' : '#06B6D4'}
+      valor=${brl(r.saude.usado)} rodape=${'usado de ' + brl(r.saude.limTot)} />
+    <${KpiDash} rot="Saúde financeira" anel=${r.saude.nota ?? 0} anelTexto=${r.saude.nota ?? '—'} cor=${r.saude.nota >= 80 ? '#22C55E' : r.saude.nota >= 60 ? '#3B82F6' : r.saude.nota >= 40 ? '#F59E0B' : '#F43F5E'}
+      valor=${r.saude.notaRot} rodape="nota de 0 a 100 · detalhes no PDF" />
   </div>
 
-  <div class="grade g-kpi" style="margin-bottom:16px">
-    <div class="card kpi"><div class="rot">Receitas no período</div><div class="val num" style="color:var(--pos)">${brl(r.tot.receitas)}</div><div class="det">Tudo o que entrou</div></div>
-    <div class="card kpi"><div class="rot">Gastos no período</div><div class="val num" style="color:var(--neg)">${brl(r.tot.despesas)}</div><div class="det">${r.tot.qtdDespesas} lançamento(s)</div></div>
-    <div class="card kpi"><div class="rot">${r.tot.resultado >= 0 ? 'Sobrou' : 'Faltou'}</div><div class="val"><${Tom} v=${r.tot.resultado} /></div><div class="det">Receitas − gastos</div></div>
-  </div>
+  ${r.itens.length === 0 ? html`<div class="card"><${Vazio} icone="chart-line" titulo="Sem dados para estes filtros" texto="Não há lançamentos pagos no período escolhido. Ajuste o período ou os filtros." /></div>` : html`
+  <div class="dash-corpo">
+    <${ArvoreCategorias} D=${D} g=${r.porCat} gA=${r.porCatA} itens=${r.itens} valor=${cats[0] || null} onChange=${(id) => { setTipoEv('gastos'); setCats(id ? [id] : []); }} />
+    <div class="dash-main">
+      <div class="grade g-3" style="margin-bottom:16px">
+        <${BarrasMeta} grupos=${C.rankingValor(r.porCat.grupos)} orcPorCat=${r.orcPorCat} abrir=${setFatia} />
+        <${RoscaDestaque} titulo="Distribuição dos gastos" icone="chart-pie" ag=${r.porCat} chave=${'pz' + chave} abrir=${setFatia} />
+        <${Empilhadas} D=${D} f=${f} mesFim=${P.fim.slice(0, 7)} chave=${chave} />
+      </div>
 
-  <${Comparacao3} tres=${r.tres} />
-
-  ${r.itens.length === 0 ? html`<div class="card"><${Vazio} icone="chart-line" titulo="Sem dados para estes filtros" texto="Não há lançamentos realizados no período e base escolhidos. Ajuste o período, a base ou os filtros." /></div>` : html`
-  <div class="card" style="margin-bottom:16px"><h3><${Icone} n="chart-column" /> Evolução ${tipoEv === 'gastos' ? 'dos gastos' : 'das receitas'}</h3>
+      <div class="grade g-21" style="margin-bottom:16px">
+  <div class="card"><h3><${Icone} n="chart-column" /> Evolução ${tipoEv === 'gastos' ? 'dos gastos' : 'das receitas'}</h3>
     <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px">
       <div class="btn-grupo ev-tipo">
         <button class=${tipoEv === 'gastos' ? 'on gastos' : ''} onClick=${() => setTipoEv('gastos')}><${Icone} n="arrow-down" /> Gastos</button>
@@ -152,50 +176,47 @@ export function Analises() {
     </div>
     <${Grafico} chave=${'ev' + tipoEv + chave} altura=${300} rotulo=${tipoEv === 'gastos' ? 'Evolução dos gastos' : 'Evolução das receitas'} cfg=${{ type: 'bar',
       data: { labels: r.serie.chaves.map(rotSerie), datasets:
-        tipoEv === 'receitas' ? [{ label: 'Receitas', data: r.serieRec.vals.map((v) => v / 100), backgroundColor: '#16A34A', borderRadius: 6, maxBarThickness: 46 }]
+        (tipoEv === 'receitas' ? [{ label: 'Receitas', data: r.serieRec.vals.map((v) => v / 100), backgroundColor: '#16A34A', borderRadius: 6, maxBarThickness: 46 }]
         : cats.length ? r.porCatSerie.map(({ id, s }) => ({ label: D.mapa.categorias[id]?.nome, data: s.vals.map((v) => v / 100), backgroundColor: D.mapa.categorias[id]?.cor, borderRadius: 6, maxBarThickness: 46 }))
-        : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), backgroundColor: '#E11D48', borderRadius: 6, maxBarThickness: 46 }] },
-      options: optsEixo({ plugins: { legend: { display: cats.length > 1 }, tooltip: { callbacks: { label: tip } } } }) }} />
+        : [{ label: 'Gastos', data: r.serie.vals.map((v) => v / 100), backgroundColor: '#E11D48', borderRadius: 6, maxBarThickness: 46 }]).concat(cats.length ? [] : [(() => {
+          const vals = (tipoEv === 'receitas' ? r.serieRec.vals : r.serie.vals); const nz = vals.filter((v) => v > 0); const m = nz.length ? nz.reduce((a, b) => a + b, 0) / nz.length / 100 : 0;
+          return { type: 'line', label: 'Média', data: vals.map(() => m), borderColor: '#F97316', borderDash: [6, 5], borderWidth: 2, pointRadius: 0 }; })()]) },
+      options: optsEixo({ plugins: { legend: { display: true, position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { callbacks: { label: tip } } } }) }} />
     <div class="ev-total">Total ${tipoEv === 'gastos' ? 'gasto' : 'recebido'} no período: <b class="num">${brl(tipoEv === 'gastos' ? r.tot.despesas : r.tot.receitas)}</b></div>
-    ${tipoEv === 'gastos' && html`<div style="margin:12px 0 10px"><${MenuCategoria} lista=${catsDesp} valor=${cats[0] || null} onChange=${(id) => setCats(id ? [id] : [])} /></div>`}
-    ${tipoEv === 'gastos' && (cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
-    ${tipoEv === 'receitas' && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
-  </div>
+        </div>
+        <${Alertas} itens=${r.alertas} />
+      </div>
 
-  <div class="grade g-2" style="margin-bottom:16px">
-    <${Distribuicao} titulo="Distribuição dos gastos por categoria" icone="chart-pie" ag=${r.porCat} chave=${'pz' + chave} base=${base} abrir=${setFatia} vazio="Sem despesas no período" />
-    <${Distribuicao} titulo="Distribuição das receitas por categoria" icone="hand-coins" ag=${r.porCatRec} chave=${'pr' + chave} base=${base} abrir=${setFatia} vazio="Sem receitas no período" receita />
-  </div>
+      <div class="grade g-21" style="margin-bottom:16px">
+        <${TabelaComparativa} D=${D} itens=${r.itens} itensA=${r.itensA} abrir=${setFatia} rotA="Período anterior" rotB=${P.rot.replace(/^Mês atual — /, '')} />
+        <${Comparacao3} tres=${r.tres} />
+      </div>
 
-  <div class="grade" style="margin-bottom:16px">
-    <div class="card"><h3><${Icone} n="chart-column" /> Receitas × gastos mês a mês</h3>
-      <${Grafico} chave=${'rx' + chave} altura=${300} rotulo="Receitas versus despesas por mês" cfg=${{ type: 'bar',
-        data: { labels: r.meses.map(mesCurto), datasets: [
-          { type: 'line', label: 'Sobrou', data: r.rxd.map((t) => t.resultado / 100), borderColor: '#1B1F3B', backgroundColor: '#1B1F3B', pointRadius: 4, pointStyle: 'rectRot', tension: .2,
-            segment: { borderColor: (ctx) => (ctx.p1.parsed.y < 0 ? '#D1343E' : '#12855A') }, pointBackgroundColor: r.rxd.map((t) => (t.resultado < 0 ? '#D1343E' : t.resultado > 0 ? '#12855A' : '#6B7280')) },
-          { label: 'Receitas', data: r.rxd.map((t) => t.receitas / 100), backgroundColor: '#22C55E', borderRadius: 6 },
-          { label: 'Gastos', data: r.rxd.map((t) => t.despesas / 100), backgroundColor: '#F43F5E', borderRadius: 6 },
-        ] }, options: optsEixo() }} />
-      <div class="tabela-wrap" style="margin-top:8px"><table class="tab"><thead><tr><th>Mês</th><th class="r">Receitas</th><th class="r">Gastos</th><th class="r">Sobrou</th></tr></thead>
-        <tbody>${r.meses.map((ym, i) => html`<tr><td>${mesCurto(ym)}</td><td class="r num">${brl(r.rxd[i].receitas)}</td><td class="r num">${brl(r.rxd[i].despesas)}</td><td class="r"><${Tom} v=${r.rxd[i].resultado} /></td></tr>`)}</tbody></table></div>
-    </div>
-  </div>
+      <${FaixaResumo} itens=${[
+        { rot: 'Projeção do fim do mês', valor: brl(r.proj.valor), det: 'saldo das contas com o que ainda vence', icone: 'trending-up', cor: r.proj.valor < 0 ? '#F43F5E' : '#3B82F6' },
+        { rot: 'Maior gasto do período', valor: r.maior ? brl(r.maior.valor) : '—', det: r.maior ? r.maior.l.descricao : '', icone: 'receipt', cor: '#F97316' },
+        { rot: 'Categoria que mais cresceu', valor: r.cresceu && r.cresceu.d > 0 ? r.cresceu.x.rotulo : '—', det: r.cresceu && r.cresceu.d > 0 ? '+' + brl(r.cresceu.d) + ' vs. período anterior' : 'nenhuma subiu', icone: 'trending-up', cor: '#F43F5E' },
+        { rot: 'Parcelamentos restantes', valor: brl(r.saude.restanteParc), det: r.saude.compras.length + ' em andamento', icone: 'credit-card', cor: '#8B5CF6' },
+        { rot: 'Juros e encargos', valor: brl(r.saude.juros), det: 'pagos no período', icone: 'badge-percent', cor: r.saude.juros ? '#F59E0B' : '#22C55E' },
+      ]} />
 
-  <div class="grade" style="margin-bottom:16px">
-    <${Ranking} titulo="Ranking por valor gasto" grupos=${C.rankingValor(r.rank.grupos)} base=${base} dim=${dimRank} setDim=${setDimRank} abrir=${setFatia} principal="valor" />
-  </div>`}
+      <div class="card" style="margin:16px 0">
+        <div class="det-topo"><h3 style="margin:0"><${Icone} n="search" /> Detalhe do período</h3>
+          <div class="btn-grupo ev-tipo">
+            <button class=${tipoEv === 'gastos' ? 'on gastos' : ''} onClick=${() => setTipoEv('gastos')}><${Icone} n="arrow-down" /> Gastos</button>
+            <button class=${tipoEv === 'receitas' ? 'on receitas' : ''} onClick=${() => { setTipoEv('receitas'); setCats([]); }}><${Icone} n="arrow-up" /> Receitas</button></div></div>
+        ${tipoEv === 'gastos' && html`<div class="so-estreito" style="margin:12px 0 0"><${MenuCategoria} lista=${catsDesp} valor=${cats[0] || null} onChange=${(id) => setCats(id ? [id] : [])} /></div>`}
+        ${tipoEv === 'gastos' && (cats.length ? cats : [null]).map((id) => html`<${DetalheGastos} key=${id || 'todos'} D=${D} catId=${id} itens=${r.itens} itensA=${r.itensA} totalPeriodo=${r.tot.despesas} base=${base} abrir=${setFatia} />`)}
+        ${tipoEv === 'receitas' && html`<${DetalheReceitas} D=${D} itens=${r.itens} abrir=${setFatia} />`}
+      </div>
 
-  <div class="grade g-2">
-    <div class="card"><h3><${Icone} n="target" /> Planejado × realizado — ${nomeMesCap(mes)}</h3>
-      ${r.orc.linhas.filter((l) => l.orcado != null).length ? html`<${Grafico} chave=${'orc' + mes + D.lancamentos.length + D.orcamentos.length} altura=${Math.max(220, r.orc.linhas.filter((l) => l.orcado != null).length * 46)} rotulo="Orçamento versus realizado por categoria" cfg=${{ type: 'bar',
-          data: { labels: r.orc.linhas.filter((l) => l.orcado != null).map((l) => l.categoria.nome), datasets: [
-            { label: 'Planejado', data: r.orc.linhas.filter((l) => l.orcado != null).map((l) => l.orcado / 100), backgroundColor: '#CBD5E1', borderRadius: 6 },
-            { label: 'Realizado', data: r.orc.linhas.filter((l) => l.orcado != null).map((l) => l.gasto / 100), backgroundColor: r.orc.linhas.filter((l) => l.orcado != null).map((l) => (l.nivel === 'estourado' ? '#D1343E' : l.nivel === 'atencao' ? '#F59E0B' : l.categoria.cor)), borderRadius: 6 }] },
-          options: { ...optsEixo(), indexAxis: 'y', scales: { x: { ticks: { callback: fmtEixo } }, y: { grid: { display: false } } } } }} />`
-        : html`<${Vazio} icone="target" titulo="Nenhum limite por categoria definido"><a class="btn sec peq" href="#/orcamento">Definir orçamento</a></${Vazio}>`}
-      <div style="font-size:12px;color:var(--txt3)">Sempre do mês atual (${nomeMesCap(mes)}).</div>
-    </div>
-    <div class="card"><h3><${Icone} n="trending-up" /> Evolução do saldo <span class="acao"><span class="base-tag">Saldo das contas</span></span></h3>
+      <div class="grade g-2" style="margin-bottom:16px">
+        <${RoscaDestaque} titulo="Distribuição das receitas" icone="hand-coins" ag=${r.porCatRec} chave=${'pr' + chave} abrir=${setFatia} receita />
+        <${Ranking} titulo="Ranking por valor gasto" grupos=${C.rankingValor(r.rank.grupos)} base=${base} dim=${dimRank} setDim=${setDimRank} abrir=${setFatia} principal="valor" />
+      </div>
+
+      <div class="grade" style="margin-bottom:16px">
+    <div class="card"><h3><${Icone} n="trending-up" /> Evolução do saldo </h3>
       <${Grafico} chave=${'sd' + D.lancamentos.length + r.saldo.length + P.ini} altura=${300} rotulo="Evolução do saldo realizado e projetado" cfg=${{ type: 'line',
         data: { labels: r.saldo.map((s) => mesCurto(s.ym)), datasets: [
           { label: 'Realizado', data: r.saldo.map((s) => (s.realizado == null ? null : s.realizado / 100)), borderColor: '#5B4FE9', backgroundColor: '#5B4FE922', fill: true, tension: .25, pointRadius: 3 },
@@ -203,7 +224,10 @@ export function Analises() {
         ] }, options: optsEixo() }} />
       <div style="font-size:12px;color:var(--txt3)">Linha contínua: saldo realizado no fim de cada mês. Tracejada (▲): projeção com previstos, recorrências e faturas.</div>
     </div>
-  </div>
+      </div>
+    </div>
+  </div>`}
+
 
   ${fatia && html`<${Modal} titulo=${fatia.rotulo} onClose=${() => setFatia(null)} larg="larga">
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px"><span class="pilula pri">${brl(fatia.valor)}</span><span class="pilula zero">${fatia.qtd} lançamento(s)</span><span class="pilula zero">${pct(fatia.pct)} do total</span></div>
@@ -291,7 +315,7 @@ function Ranking({ titulo, grupos, base, dim, setDim, abrir, principal }) {
 /** Mês selecionado comparado com os 2 meses anteriores. */
 function Comparacao3({ tres }) {
   const linhas = [['Receitas', 'receitas', false], ['Gastos', 'despesas', true], ['Sobrou', 'resultado', false]];
-  return html`<div class="card" style="margin-bottom:16px"><h3><${Icone} n="calendar-days" /> Comparação com os 2 meses anteriores</h3>
+  return html`<div class="card"><h3><${Icone} n="calendar-days" /> Comparação com os 2 meses anteriores</h3>
     <div class="tabela-wrap"><table class="tab comp3"><thead><tr><th></th>${tres.map((t, i) => html`<th class="r">${nomeMesCap(t.ym)}${i === 2 ? ' (atual)' : ''}</th>`)}</tr></thead>
       <tbody>${linhas.map(([rot, k, inv]) => html`<tr><td><b>${rot}</b></td>${tres.map((t, i) => html`<td class="r">
         <div class="num" style=${`font-weight:${i === 2 ? 800 : 600};color:${k === 'receitas' ? 'var(--pos)' : k === 'despesas' ? 'var(--neg)' : t[k] < 0 ? 'var(--neg)' : 'var(--txt)'}`}>${brl(t[k])}</div>
