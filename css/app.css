@@ -554,13 +554,14 @@ html[data-tema="escuro"] .faixa-demo { filter: brightness(.85); }
 .arv-rod { font-size: 11px; color: var(--txt3); padding: 8px 8px 2px; }
 
 .bm-lista { display: flex; flex-direction: column; gap: 4px; }
-.bm-linha { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) auto; gap: 10px; align-items: center; border: 0; background: none; padding: 6px 4px; border-radius: 10px; cursor: pointer; text-align: left; color: var(--txt); }
+.bm-linha { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: 'nome val' 'trilho trilho'; gap: 4px 10px; align-items: center; border: 0; background: none; padding: 6px 4px; border-radius: 10px; cursor: pointer; text-align: left; color: var(--txt); }
 .bm-linha:hover { background: var(--hover); }
-.bm-nome { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-.bm-trilho { position: relative; height: 10px; background: var(--grade); border-radius: 99px; }
+.bm-nome { grid-area: nome; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.bm-trilho { grid-area: trilho; position: relative; height: 9px; background: var(--grade); border-radius: 99px; }
 .bm-trilho i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 99px; max-width: 100%; }
 .bm-trilho em { position: absolute; top: -5px; bottom: -5px; width: 0; border-left: 2px dashed var(--txt); opacity: .65; }
-.bm-val { text-align: right; font-weight: 800; font-size: 13px; display: flex; flex-direction: column; }
+.bm-val { grid-area: val; text-align: right; font-weight: 800; font-size: 13px; display: flex; flex-direction: column; }
+.bm-val { flex-direction: row; gap: 6px; align-items: baseline; }
 .bm-val small { font-weight: 600; font-size: 11px; color: var(--txt3); } .bm-val small.neg { color: var(--neg); } .bm-val small.atn { color: var(--atn); }
 .bm-leg { display: flex; gap: 12px; flex-wrap: wrap; font-size: 11px; color: var(--txt3); margin-top: 8px; }
 .bm-leg i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; vertical-align: -1px; margin-right: 4px; }
@@ -598,6 +599,6 @@ html[data-tema="escuro"] .faixa-demo { filter: brightness(.85); }
 .fr-item b { font-size: 16px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .fr-item span { font-size: 11.5px; color: var(--txt3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .det-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
-@media (max-width: 760px) { .kpis-dash { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .kpi-dash { flex-direction: column; align-items: flex-start; padding: 12px; } .bm-linha { grid-template-columns: minmax(0,1fr) auto; } .bm-trilho { grid-column: 1 / -1; order: 3; } }
+@media (max-width: 760px) { .kpis-dash { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .kpi-dash { flex-direction: column; align-items: flex-start; padding: 12px; } }
 
 @media (max-width: 1280px) { .dash-corpo { grid-template-columns: 1fr; } .arvore { display: none; } .so-estreito { display: block; } }
