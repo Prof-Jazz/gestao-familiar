@@ -540,7 +540,6 @@ html[data-tema="escuro"] .faixa-demo { filter: brightness(.85); }
 .dash-corpo { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 16px; align-items: start; }
 .dash-main { min-width: 0; }
 .so-estreito { display: none; }
-@media (max-width: 1280px) { .dash-corpo { grid-template-columns: 1fr; } .arvore { display: none; } .so-estreito { display: block; } }
 
 .arvore { position: sticky; top: 16px; padding: 12px; display: flex; flex-direction: column; gap: 2px; max-height: calc(100vh - 32px); overflow-y: auto; }
 .arv-cab { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--txt3); padding: 4px 8px 8px; }
@@ -600,3 +599,5 @@ html[data-tema="escuro"] .faixa-demo { filter: brightness(.85); }
 .fr-item span { font-size: 11.5px; color: var(--txt3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .det-topo { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 760px) { .kpis-dash { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .kpi-dash { flex-direction: column; align-items: flex-start; padding: 12px; } .bm-linha { grid-template-columns: minmax(0,1fr) auto; } .bm-trilho { grid-column: 1 / -1; order: 3; } }
+
+@media (max-width: 1280px) { .dash-corpo { grid-template-columns: 1fr; } .arvore { display: none; } .so-estreito { display: block; } }
