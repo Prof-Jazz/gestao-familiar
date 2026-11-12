@@ -602,3 +602,7 @@ html[data-tema="escuro"] .faixa-demo { filter: brightness(.85); }
 @media (max-width: 760px) { .kpis-dash { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } .kpi-dash { flex-direction: column; align-items: flex-start; padding: 12px; } }
 
 @media (max-width: 1280px) { .dash-corpo { grid-template-columns: 1fr; } .arvore { display: none; } .so-estreito { display: block; } }
+
+/* minigráficos do painel */
+.spark { display: block; width: 100%; margin: 6px 0 2px; overflow: visible; }
+.kpi.destaque .spark { margin-top: 10px; opacity: .95; }
