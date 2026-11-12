@@ -83,18 +83,22 @@ export function Analises() {
     const orcPorCat = Object.fromEntries(orc.linhas.filter((l) => l.orcado != null).map((l) => [l.categoria.id, l.orcado]));
     const porCatA = C.agrupar(D, itensA, 'categoria');
     const contasAtrasadas = C.vivos(D).filter((l) => l.status === 'previsto' && l.tipo === 'despesa' && C.dataPrevista(l) < H);
-    const alertas = montarAlertas({ D, H, g: porCat, gA: porCatA, orcPorCat, saude, contasAtrasadas });
+    const inicioDados = C.vivos(D).filter((l) => !l.ajuste_inicial && l.status === 'efetivado').reduce((m, l) => (l.data_ocorrencia < m ? l.data_ocorrencia : m), '9999-12-31');
+    const antOk = PA.ini >= inicioDados;
+    const alertas = montarAlertas({ D, H, g: porCat, gA: porCatA, orcPorCat, saude, contasAtrasadas, anteriorCompleto: antOk });
     const maior = itens.filter((it) => C.valorDespesa(it) > 0).sort((a, b) => b.valor - a.valor)[0];
     const mapaA = Object.fromEntries(porCatA.grupos.map((x) => [x.chave, x.valor]));
     const cresceu = porCat.grupos.map((x) => ({ x, d: x.valor - (mapaA[x.chave] || 0) })).sort((a, b) => b.d - a.d)[0];
     const proj = C.projecaoFimMes(D, H.slice(0, 7), H);
-    return { saude, orcPorCat, porCatA, alertas, maior, cresceu, proj, tres, serieRec, itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
+    return { antOk, saude, orcPorCat, porCatA, alertas, maior, cresceu, proj, tres, serieRec, itens, itensA, porCatRec, tot, totA, porCat, rank, serie, serieA, porCatSerie, meses, rxd, orc, saldo };
   }, [D, base, P.ini, P.fim, f, gran, cats.join(), dimRank, mes]);
 
   const rotSerie = (k) => (gran === 'mes' ? mesCurto(k) : dataBR(k).slice(0, 5));
   const chave = [base, P.ini, P.fim, JSON.stringify(f), gran, cats.join(), mes, D.lancamentos.length, r.tot.despesas, r.tot.receitas].join('|');
-  const vDesp = variacao(r.tot.despesas, r.totA.despesas);
-  const vRec = variacao(r.tot.receitas, r.totA.receitas);
+  // comparação só faz sentido se o período anterior já estava todo registrado na plataforma
+  const anteriorCompleto = r.antOk;
+  const vDesp = anteriorCompleto ? variacao(r.tot.despesas, r.totA.despesas) : null;
+  const vRec = anteriorCompleto ? variacao(r.tot.receitas, r.totA.receitas) : null;
   const subs = f.categoria_id ? D.categorias.filter((c) => c.parent_id === f.categoria_id).map((c) => ({ v: c.id, r: c.nome })) : [];
   const catsDesp = D.categorias.filter((c) => c.tipo === 'despesa' && !c.parent_id);
 
@@ -188,7 +192,7 @@ export function Analises() {
       </div>
 
       <div class="grade g-21" style="margin-bottom:16px">
-        <${TabelaComparativa} D=${D} itens=${r.itens} itensA=${r.itensA} abrir=${setFatia} rotA="Período anterior" rotB=${P.rot.replace(/^Mês atual — /, '')} />
+        <${TabelaComparativa} D=${D} itens=${r.itens} itensA=${r.itensA} abrir=${setFatia} rotA=${anteriorCompleto ? 'Período anterior' : 'Anterior (incompleto)'} rotB=${P.rot.replace(/^Mês atual — /, '')} />
         <${Comparacao3} tres=${r.tres} />
       </div>
 

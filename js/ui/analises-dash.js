@@ -21,7 +21,7 @@ export function Anel({ v, cor, tam = 62, esp = 7, texto }) {
 
 /** Variação colorida: ▲/▼ com %; inverso = subir é ruim (gastos). */
 export function Var({ v, inverso, sufixo = 'vs. período anterior' }) {
-  if (v == null || !isFinite(v)) return html`<span class="var-txt zero">— sem comparação</span>`;
+  if (v == null || !isFinite(v)) return html`<span class="var-txt zero">sem comparação ainda</span>`;
   if (Math.abs(v) < 0.05) return html`<span class="var-txt zero">● estável ${sufixo}</span>`;
   const subiu = v > 0, ruim = inverso ? subiu : !subiu;
   return html`<span class=${'var-txt ' + (ruim ? 'neg' : 'pos')}>${subiu ? '▲' : '▼'} ${pctTxt(Math.abs(v), 1)} <small>${sufixo}</small></span>`;
@@ -125,7 +125,7 @@ export function Alertas({ itens }) {
   </div>`;
 }
 
-export function montarAlertas({ D, H, g, gA, orcPorCat, saude, contasAtrasadas }) {
+export function montarAlertas({ D, H, g, gA, orcPorCat, saude, contasAtrasadas, anteriorCompleto = true }) {
   const out = [];
   for (const f of saude.faturas) {
     const dias = Math.round((new Date(f.vencimento) - new Date(H)) / 864e5);
@@ -140,7 +140,7 @@ export function montarAlertas({ D, H, g, gA, orcPorCat, saude, contasAtrasadas }
     else if (meta && gr.valor >= meta * 0.8) out.push({ tipo: 'atn', icone: 'target', titulo: `${gr.rotulo} perto do limite`, texto: `${pctTxt((gr.valor / meta) * 100)} do orçamento` });
   }
   const mapaA = Object.fromEntries(gA.grupos.map((x) => [x.chave, x.valor]));
-  const subiu = g.grupos.map((x) => ({ x, v: variacao(x.valor, mapaA[x.chave] || 0) })).filter((o) => o.v != null && o.v >= 20 && o.x.valor - (mapaA[o.x.chave] || 0) >= 5000)
+  const subiu = !anteriorCompleto ? [] : g.grupos.map((x) => ({ x, v: variacao(x.valor, mapaA[x.chave] || 0) })).filter((o) => o.v != null && o.v >= 20 && o.x.valor - (mapaA[o.x.chave] || 0) >= 5000)
     .sort((a, b) => b.x.valor - (mapaA[b.x.chave] || 0) - (a.x.valor - (mapaA[a.x.chave] || 0))).slice(0, 2);
   for (const o of subiu) out.push({ tipo: 'atn', icone: 'trending-up', titulo: `${o.x.rotulo} subiu ${pctTxt(o.v)}`, texto: `+${brl(o.x.valor - (mapaA[o.x.chave] || 0))} vs. período anterior` });
   if (saude.juros > 0) out.push({ tipo: 'atn', icone: 'badge-percent', titulo: `${brl(saude.juros)} em juros e encargos`, texto: 'Dinheiro que dá para economizar quitando parcelamentos' });
