@@ -10,11 +10,13 @@ const chaveD = (t) => CHAVE[t] || t;
 const vazio = () => indexar({ lancamentos: [], contas: [], cartoes: [], categorias: [], pessoas: [], projetos: [], tarefas: [],
   metas: [], aportes: [], orcamentos: [], recorrencias: [], perfis: [], config: {} });
 
+import { temaAtual, definirTema } from '../lib/tema.js';
+export function alternarTema() { const t = store.s.tema === 'escuro' ? 'claro' : 'escuro'; definirTema(t); store.set({ tema: t }); }
 export const store = {
   s: {
     fase: 'iniciando', // iniciando | login | redefinir | carregando | pronto | negado | erro | config
     backend: null, sessao: null, perfil: null, D: vazio(), versaoD: 0,
-    mes: mesAtual(), toasts: [], form: null, dialogo: null, online: true, sinc: 'conectando', erro: null,
+    mes: mesAtual(), tema: temaAtual(), toasts: [], form: null, dialogo: null, online: true, sinc: 'conectando', erro: null,
   },
   ouvintes: new Set(),
   set(p) { this.s = { ...this.s, ...(typeof p === 'function' ? p(this.s) : p) }; this.ouvintes.forEach((f) => f(this.s)); },

@@ -147,6 +147,7 @@ export function Barra({ pct, nivel = '', marco }) {
 /** Wrapper do Chart.js. `cfg` é recriado quando `chave` muda. */
 export function Grafico({ cfg, chave, altura = 280, onClique, rotulo }) {
   const ref = useRef(); const ch = useRef();
+  const { tema } = useStore();
   useEffect(() => {
     const Chart = window.Chart;
     if (!Chart || !ref.current) return;
@@ -155,7 +156,7 @@ export function Grafico({ cfg, chave, altura = 280, onClique, rotulo }) {
     if (onClique) c.options.onClick = (evt, els) => { if (els.length) onClique(els[0].index, els[0].datasetIndex); };
     ch.current = new Chart(ref.current, c);
     return () => ch.current?.destroy();
-  }, [chave]);
+  }, [chave, tema]);
   return html`<div class="grafico" style=${`height:${altura}px`}><canvas ref=${ref} role="img" aria-label=${rotulo || 'Gráfico'}></canvas></div>`;
 }
 

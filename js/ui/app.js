@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'preact/hooks';
 import { html, Icone, Avatar, Dialogos, Toasts, Modal, corPessoa } from './comp.js';
-import { useStore, abrirForm, sair, fecharPagarFatura } from '../data/store.js';
+import { useStore, abrirForm, sair, fecharPagarFatura, alternarTema } from '../data/store.js';
 import { Login, RedefinirSenha, Negado, ErroCarga, SemConfig, MarcaCompacta } from './login.js';
 import { FormLancamento } from './form-lancamento.js';
 import { PagarFaturaGlobal } from './contas.js';
@@ -54,9 +54,11 @@ export function App() {
       <nav class="nav">${ROTAS.map((r, i) => html`${i === 7 ? html`<div class="nav-sep"></div>` : ''}<a href=${'#/' + r.id} class=${r.id === rota.id ? 'ativo' : ''} aria-current=${r.id === rota.id ? 'page' : undefined}><${Icone} n=${r.icone} />${r.nome}</a>`)}</nav>
       <div class="usuario-chip"><${Avatar} nome=${nome} cor=${cor} /><div style="flex:1;min-width:0"><div class="nome">${nome}</div>
         <div class=${'selo-sinc ' + sinc[0]}><i></i>${sinc[1]}</div></div>
+        <button class="btn fantasma ico" onClick=${alternarTema} title=${s.tema === 'escuro' ? 'Modo claro' : 'Modo escuro'} aria-label="Alternar modo claro/escuro"><${Icone} n=${s.tema === 'escuro' ? 'sun' : 'moon'} /></button>
         <button class="btn fantasma ico" onClick=${sair} title="Sair" aria-label="Sair"><${Icone} n="log-out" /></button></div>
     </aside>
-    <header class="barra-movel"><${MarcaCompacta} /><span style="flex:1"></span><span class=${'selo-sinc ' + sinc[0]} title=${sinc[1]}><i></i></span><${Avatar} nome=${nome} cor=${cor} /></header>
+    <header class="barra-movel"><${MarcaCompacta} /><span style="flex:1"></span><span class=${'selo-sinc ' + sinc[0]} title=${sinc[1]}><i></i></span>
+      <button class="btn fantasma ico" onClick=${alternarTema} aria-label="Alternar modo claro/escuro"><${Icone} n=${s.tema === 'escuro' ? 'sun' : 'moon'} /></button><${Avatar} nome=${nome} cor=${cor} /></header>
     <main class="principal" id="conteudo"><${R.C} arg=${rota.arg} /></main>
     <nav class="nav-movel" aria-label="Navegação">
       <a href="#/painel" class=${rota.id === 'painel' ? 'ativo' : ''}><${Icone} n="layout-dashboard" />Painel</a>

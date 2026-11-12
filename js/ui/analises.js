@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { html, Icone, CatIcone, Tom, Base, Vazio, Sel, Campo, Grafico, Modal, opcoesContas, opcoesPessoas, opcoesCategorias } from './comp.js';
 import { useStore, toast } from '../data/store.js';
 import { RelatorioAnalise } from './relatorio-analise.js';
+import { corTema } from '../lib/tema.js';
 import { exportarCSV, exportarXLSX } from '../lib/exportar.js';
 import { ItemLanc } from './item.js';
 import * as C from '../lib/calc.js';
@@ -10,7 +11,7 @@ import { brl, pct, primeiroDia, ultimoDia, addMesYM, mesCurto, dataBR, difDias, 
 const fmtEixo = (v) => 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 });
 const tip = (c) => ` ${c.dataset.label ? c.dataset.label + ': ' : ''}${brl(Math.round(c.raw * 100))}`;
 const optsEixo = (extra = {}) => ({ interaction: { mode: 'index', intersect: false }, plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } }, tooltip: { callbacks: { label: tip } } },
-  scales: { y: { ticks: { callback: fmtEixo }, grid: { color: '#EEF0F6' } }, x: { grid: { display: false } } }, ...extra });
+  scales: { y: { ticks: { callback: fmtEixo }, grid: { color: corTema('--grade', '#EEF0F6') } }, x: { grid: { display: false } } }, ...extra });
 
 export function periodoDe(preset, mes, livre) {
   const H = hoje();

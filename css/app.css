@@ -10,6 +10,7 @@
   --raio: 18px; --raio-p: 12px; --sombra: 0 1px 2px rgba(27,31,59,.05), 0 6px 20px -8px rgba(27,31,59,.12);
   --sombra-forte: 0 18px 50px -12px rgba(27,31,59,.35);
   --lateral: 264px;
+  --grade: #EEF0F6; --campo: #FFFFFF; --vidro: rgba(255,255,255,.78); --hover: #F4F5FB;
   font-family: 'Jakarta', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   color: var(--txt); background: var(--bg); font-size: 15px; line-height: 1.45;
   -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
@@ -482,3 +483,40 @@ img.ic.logo { object-fit: contain; border-radius: 4px; }
 .menu-cat-op > .cb, .menu-cat-btn > .cb { flex: none; }
 .menu-cat-op:hover { background: #F4F5FB; }
 .menu-cat-op.on { background: #EEF0FF; font-weight: 700; color: #4338CA; }
+
+/* =================================================================== MODO ESCURO */
+html[data-tema="escuro"] {
+  --bg: #0A1020; --bg2: #101A2E; --card: #131D33; --borda: #22304D; --borda2: #2E3E61;
+  --txt: #E8EDF8; --txt2: #A9B3CB; --txt3: #7C88A4;
+  --pri: #8B7CFF; --pri2: #A78BFA; --pri-suave: rgba(139,124,255,.16); --pri-esc: #B4A9FF;
+  --pos: #34D399; --pos-suave: rgba(52,211,153,.14); --neg: #FB7185; --neg-suave: rgba(251,113,133,.14); --zero: #94A3B8; --zero-suave: rgba(148,163,184,.13);
+  --atn: #FBBF24; --atn-suave: rgba(251,191,36,.14);
+  --sombra: 0 1px 0 rgba(255,255,255,.03) inset, 0 10px 28px -14px rgba(0,0,0,.7);
+  --sombra-forte: 0 24px 60px -16px rgba(0,0,0,.8);
+  --grade: rgba(148,163,184,.12); --campo: #0E1729; --vidro: rgba(16,24,44,.82); --hover: #1A2642;
+  color-scheme: dark;
+}
+html[data-tema="escuro"] body { background: radial-gradient(1100px 520px at 100% -10%, rgba(91,79,233,.20) 0%, transparent 60%), radial-gradient(900px 420px at -10% 110%, rgba(14,165,233,.10) 0%, transparent 60%), var(--bg); }
+html[data-tema="escuro"] .lateral, html[data-tema="escuro"] .barra-movel, html[data-tema="escuro"] .nav-movel { background: var(--vidro); }
+html[data-tema="escuro"] .login-card { background: rgba(19,29,51,.94); }
+html[data-tema="escuro"] .inp, html[data-tema="escuro"] select.inp, html[data-tema="escuro"] textarea.inp,
+html[data-tema="escuro"] .cat-op, html[data-tema="escuro"] .chip, html[data-tema="escuro"] .logo-op,
+html[data-tema="escuro"] .det-kpi, html[data-tema="escuro"] .det-lista, html[data-tema="escuro"] .dividir-linha, html[data-tema="escuro"] .dividir-resumo { background: var(--campo); }
+html[data-tema="escuro"] .chip.on { background: var(--pri); color: #fff; }
+html[data-tema="escuro"] .kpi.destaque { background: linear-gradient(135deg, #3F33C9 0%, #6D28D9 55%, #9333EA 100%); }
+html[data-tema="escuro"] .kpi.destaque .tom { background: rgba(10,16,32,.55); box-shadow: inset 0 0 0 1px rgba(255,255,255,.12); }
+html[data-tema="escuro"] .kpi.destaque .tom.pos { color: #6EE7B7; } html[data-tema="escuro"] .kpi.destaque .tom.neg { color: #FDA4AF; }
+html[data-tema="escuro"] .base-tag.caixa { background: rgba(14,165,233,.16); color: #7DD3FC; }
+html[data-tema="escuro"] .base-tag.consumo { background: rgba(236,72,153,.16); color: #F9A8D4; }
+html[data-tema="escuro"] .base-tag.proj { background: rgba(245,158,11,.16); color: #FCD34D; }
+html[data-tema="escuro"] .cal .ev.fatura { background: rgba(139,92,246,.2); color: #C4B5FD; }
+html[data-tema="escuro"] .rank-pos.p2 { background: #334155; color: #E2E8F0; }
+html[data-tema="escuro"] .conta-tag { background: color-mix(in srgb, var(--c) 16%, var(--card)); border-color: color-mix(in srgb, var(--c) 35%, var(--card)); color: color-mix(in srgb, var(--c) 55%, #fff); }
+html[data-tema="escuro"] .detalhe-gasto { background: color-mix(in srgb, var(--c) 7%, var(--card)); }
+html[data-tema="escuro"] .menu-cat-seta { background: var(--pri-suave); color: var(--pri); }
+html[data-tema="escuro"] .menu-cat-op:hover { background: var(--hover); }
+html[data-tema="escuro"] .menu-cat-op.on { background: var(--pri-suave); color: var(--pri-esc); }
+html[data-tema="escuro"] .toast { background: #E8EDF8; color: #0A1020; }
+html[data-tema="escuro"] .cc-info { background: var(--card); }
+html[data-tema="escuro"] .modal, html[data-tema="escuro"] .dialogo { background: var(--card); }
+html[data-tema="escuro"] .faixa-demo { filter: brightness(.85); }
