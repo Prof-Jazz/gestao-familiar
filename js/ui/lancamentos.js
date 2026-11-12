@@ -57,6 +57,15 @@ export function Lancamentos({ arg }) {
     }
     return { rec, desp };
   }, [realizados]);
+  const [limpando, setLimpando] = useState(false);
+  async function limparTudo() {
+    const n = lixeira.length;
+    if (!n || !(await confirmar('Limpar toda a lixeira?', `${n} lançamento(s) serão apagados para sempre e não poderão ser restaurados (o histórico de auditoria é mantido).`, { ok: 'Apagar tudo', perigo: true }))) return;
+    setLimpando(true); let ok = 0, erro = null;
+    for (const l of lixeira) { try { await apagarDefinitivo(l); ok++; } catch (e) { erro = e; } }
+    setLimpando(false);
+    toast(erro ? `${ok} apagado(s); alguns não puderam ser apagados: ${erro.message}` : `Lixeira limpa: ${ok} lançamento(s) apagado(s).`, erro ? 'erro' : 'ok');
+  }
   const lixeira = useMemo(() => D.lancamentos.filter((l) => l.excluido_em).sort((a, b) => b.excluido_em.localeCompare(a.excluido_em)), [D]);
   const subs = f.categoria_id ? D.categorias.filter((c) => c.parent_id === f.categoria_id).map((c) => ({ v: c.id, r: c.nome })) : [];
   const nFiltros = Object.keys(f).length;
@@ -117,7 +126,8 @@ export function Lancamentos({ arg }) {
       : grupos.length ? grupos.map((g) => html`<div class="dia-grupo"><span>${rotDia(g.d)}${visao === 'apagar' && g.d < H ? ' · atrasada' : ''}</span></div><div class="lista">${g.ls.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} semData />`)}</div>`)
       : html`<div class="lista">${visivel.map((l) => html`<${ItemLanc} key=${l.id} l=${l} D=${D} />`)}</div>`}
   </div>` : html`
-  <div class="card"><h3><${Icone} n="trash-2" /> Lixeira</h3><div class="card-sub">Itens na lixeira não entram em saldos, gráficos nem relatórios. Restaure ou apague de vez.</div>
+  <div class="card"><h3><${Icone} n="trash-2" /> Lixeira
+    ${lixeira.length > 0 && html`<button class="btn perigo peq acao" disabled=${limpando} onClick=${limparTudo}><${Icone} n="trash-2" /> ${limpando ? 'Limpando…' : `Limpar tudo (${lixeira.length})`}</button>`}</h3><div class="card-sub">Itens na lixeira não entram em saldos, gráficos nem relatórios. Restaure ou apague de vez.</div>
     ${lixeira.length === 0 ? html`<${Vazio} icone="trash-2" titulo="Lixeira vazia" />` : html`<div class="lista">${lixeira.map((l) => html`<div class="item">
       <${CatIcone} cat=${D.mapa.categorias[l.categoria_id]} />
       <div class="meio"><div class="t1">${l.descricao} · ${brl(l.valor_centavos)}</div><div class="t2">${dataBR(l.data_ocorrencia)} · Excluído por ${nomeUsuario(l.excluido_por)} em ${dataHoraBR(l.excluido_em)}</div></div>
